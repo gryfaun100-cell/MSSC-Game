@@ -261,4 +261,5 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(3001, '0.0.0.0', () => console.log('Server on port 3001'));
+const PORT = process.env.PORT || 3001;
+httpServer.listen(PORT, '0.0.0.0', () => console.log(`Server on port ${PORT}`));
