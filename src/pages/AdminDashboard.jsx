@@ -190,6 +190,9 @@ export default function AdminDashboard({ user, onLogout }) {
                       📊 Results
                     </button>
                   )}
+                  <button className="btn btn-outline" style={{ fontSize: 13, color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => { if(window.confirm('Are you sure you want to delete this room?')) socket.emit('deleteRoom', room.id); }}>
+                    <Trash2 size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Delete
+                  </button>
                 </div>
               </div>
 

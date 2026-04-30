@@ -247,6 +247,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('deleteRoom', (roomId) => {
+    const room = rooms[roomId];
+    if (room && room.hostId === socket.id) {
+      clearRoomTimers(room);
+      io.to(roomId).emit('gameEnded', room);
+      delete rooms[roomId];
+      io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+    }
+  });
+
   socket.on('disconnect', () => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
