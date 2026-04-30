@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import GameRoom from './pages/GameRoom';
@@ -38,7 +37,6 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={user && user.role !== 'admin' ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
         <Route path="/admin" element={user && user.role === 'admin' ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
         <Route path="/room/:roomId" element={user ? <GameRoom user={user} /> : <Navigate to="/" />} />

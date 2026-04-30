@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, Play, Clock, Hash, Settings, Users, ArrowRight, Trash2, LogOut, AlertCircle, LayoutDashboard } from 'lucide-react';
 import { API_URL } from '../config';
 import { socket } from '../socket';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
-function NavBar({ user, onLogout }) {
+function ConfirmModal({ title, message, confirmText, confirmColor, onConfirm, onClose }) {
   return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 360, padding: 24, textAlign: 'center' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>{title}</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>{message}</p>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn" style={{ flex: 1, background: confirmColor, color: '#fff', border: 'none' }} onClick={onConfirm}>
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NavBar({ user, onLogout }) {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  return (
+    <>
     <nav className="navbar">
       <div className="navbar-inner">
         <div className="navbar-brand">
@@ -21,13 +41,24 @@ function NavBar({ user, onLogout }) {
             <div className="avatar">{user.name?.[0]?.toUpperCase()}</div>
             <span style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</span>
           </div>
-          <button className="logout-btn" onClick={onLogout}>
+          <button className="logout-btn" onClick={() => setShowLogoutModal(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </button>
         </div>
       </div>
     </nav>
+    {showLogoutModal && (
+      <ConfirmModal 
+        title="Log Out" 
+        message="Are you sure you want to log out?" 
+        confirmText="Log Out" 
+        confirmColor="var(--danger)" 
+        onConfirm={onLogout} 
+        onClose={() => setShowLogoutModal(false)} 
+      />
+    )}
+    </>
   );
 }
 
@@ -70,12 +101,13 @@ function CreateRoomModal({ onClose, onCreated }) {
 }
 
 export default function AdminDashboard({ user, onLogout }) {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [deleteRoomId, setDeleteRoomId] = useState(null);
   const [expandedRoom, setExpandedRoom] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple' });
-  const navigate = useNavigate();
 
   const totalPlayers = rooms.reduce((s, r) => s + r.playerCount, 0);
   const activeGames = rooms.filter(r => r.status === 'playing').length;
@@ -118,7 +150,6 @@ export default function AdminDashboard({ user, onLogout }) {
       <NavBar user={user} onLogout={onLogout} />
 
       <div className="container">
-        {/* Stats */}
         <div className="stats-grid">
           {[
             { icon: '🎮', value: rooms.length, label: 'Total Rooms', color: '#2563eb' },
@@ -138,7 +169,6 @@ export default function AdminDashboard({ user, onLogout }) {
           ))}
         </div>
 
-        {/* Section header */}
         <div className="section-header">
           <h2 className="section-title">Game Rooms</h2>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -190,13 +220,12 @@ export default function AdminDashboard({ user, onLogout }) {
                       📊 Results
                     </button>
                   )}
-                  <button className="btn btn-outline" style={{ fontSize: 13, color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => { if(window.confirm('Are you sure you want to delete this room?')) socket.emit('deleteRoom', room.id); }}>
+                  <button className="btn btn-outline" style={{ fontSize: 13, color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => setDeleteRoomId(room.id)}>
                     <Trash2 size={14} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Delete
                   </button>
                 </div>
               </div>
 
-              {/* Expanded question manager */}
               {expandedRoom === room.id && (
                 <div style={{ background: '#f0f6ff', border: '1px solid #bfdbfe', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                   <div>
@@ -267,6 +296,16 @@ export default function AdminDashboard({ user, onLogout }) {
       </div>
 
       {showModal && <CreateRoomModal onClose={() => setShowModal(false)} onCreated={handleCreateRoom} />}
+      {deleteRoomId && (
+        <ConfirmModal 
+          title="Delete Room" 
+          message="Are you sure you want to delete this room? This action cannot be undone." 
+          confirmText="Delete" 
+          confirmColor="var(--danger)" 
+          onConfirm={() => { socket.emit('deleteRoom', deleteRoomId); setDeleteRoomId(null); }} 
+          onClose={() => setDeleteRoomId(null)} 
+        />
+      )}
     </div>
   );
 }

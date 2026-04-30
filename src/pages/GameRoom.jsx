@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, Trophy, Clock, CheckCircle2, XCircle, LogOut, LayoutDashboard, Target } from 'lucide-react';
 import { socket } from '../socket';
 import { API_URL } from '../config';
 import { RaceTrack, CircleTimer, Leaderboard, WinnersPodium, QuestionDisplay } from '../components/GameRoomParts';

@@ -1,10 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Play, Users, Clock, Hash, LogOut, ChevronRight } from 'lucide-react';
 import { API_URL } from '../config';
 import { socket } from '../socket';
 
-function NavBar({ user, onLogout }) {
+function ConfirmModal({ title, message, confirmText, confirmColor, onConfirm, onClose }) {
   return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 360, padding: 24, textAlign: 'center' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>{title}</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>{message}</p>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn" style={{ flex: 1, background: confirmColor, color: '#fff', border: 'none' }} onClick={onConfirm}>
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NavBar({ user, onLogout }) {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  return (
+    <>
     <nav className="navbar">
       <div className="navbar-inner">
         <div className="navbar-brand">
@@ -19,13 +39,24 @@ function NavBar({ user, onLogout }) {
             <div className="avatar">{user.name?.[0]?.toUpperCase()}</div>
             <span style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</span>
           </div>
-          <button className="logout-btn" onClick={onLogout}>
+          <button className="logout-btn" onClick={() => setShowLogoutModal(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </button>
         </div>
       </div>
     </nav>
+    {showLogoutModal && (
+      <ConfirmModal 
+        title="Log Out" 
+        message="Are you sure you want to log out?" 
+        confirmText="Log Out" 
+        confirmColor="var(--danger)" 
+        onConfirm={onLogout} 
+        onClose={() => setShowLogoutModal(false)} 
+      />
+    )}
+    </>
   );
 }
 
