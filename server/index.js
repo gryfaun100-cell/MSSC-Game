@@ -251,10 +251,7 @@ io.on('connection', (socket) => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
       if (room.hostId === socket.id) {
-        clearRoomTimers(room);
-        room.status = 'finished';
-        io.to(roomId).emit('gameEnded', room);
-        delete rooms[roomId];
+        // Do nothing. Allow admin to refresh and rejoin. Room is only deleted via manual delete.
       } else {
         const idx = room.players.findIndex(p => p.id === socket.id);
         if (idx !== -1) { room.players.splice(idx, 1); io.to(roomId).emit('roomStateUpdate', room); }
@@ -264,5 +261,4 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, '0.0.0.0', () => console.log(`Server on port ${PORT}`));
+httpServer.listen(3001, '0.0.0.0', () => console.log('Server on port 3001'));
