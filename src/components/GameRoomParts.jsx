@@ -3,18 +3,53 @@ const L = ['A','B','C','D'];
 
 export function RaceTrack({ players, totalQ }) {
   if (!players.length) return <div style={{textAlign:'center',padding:24,color:'#94a3b8'}}>🦆 Waiting for players...</div>;
-  return <div>{players.map(p=>{
-    const pct=totalQ>0?Math.min((p.score/totalQ)*82,82):0;
-    return <div key={p.id} style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-      <div style={{width:100,fontSize:12,fontWeight:600,color:'#64748b',textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flexShrink:0}}>{p.name}</div>
-      <div style={{flex:1,height:48,background:'linear-gradient(90deg,#bae6fd,#38bdf8)',borderRadius:99,position:'relative',overflow:'hidden',border:'2px solid #7dd3fc',boxShadow:'inset 0 2px 6px rgba(0,0,0,0.1)'}}>
-        <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${pct}%`,background:'rgba(255,255,255,0.25)',transition:'width 0.7s cubic-bezier(0.34,1.56,0.64,1)'}}/>
-        <span style={{position:'absolute',top:'50%',transform:'translateY(-50%)',left:`calc(${pct}% + 2px)`,fontSize:26,transition:'left 0.7s cubic-bezier(0.34,1.56,0.64,1)',zIndex:5,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'}}>🦆</span>
-        <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',fontSize:18}}>🏁</span>
-      </div>
-      <div style={{width:44,fontSize:12,fontWeight:700,color:'#2563eb',flexShrink:0}}>{p.score}pts</div>
-    </div>;
-  })}</div>;
+  
+  return (
+    <div style={{ position: 'relative', width: '100%', height: 220, background: 'linear-gradient(180deg, #bae6fd, #38bdf8)', borderRadius: 16, border: '4px solid #7dd3fc', overflow: 'hidden', boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.1)' }}>
+      {/* Finish line */}
+      <div style={{ position: 'absolute', right: 20, top: 0, bottom: 0, width: 24, background: 'repeating-linear-gradient(45deg, #000, #000 12px, #fff 12px, #fff 24px)', opacity: 0.8 }} />
+      <div style={{ position: 'absolute', right: 54, top: '50%', transform: 'translateY(-50%)', fontSize: 32, opacity: 0.9 }}>🏁</div>
+      
+      {/* Swarm of Ducks */}
+      {players.map((p, index) => {
+        const pct = totalQ > 0 ? Math.min((p.score / totalQ) * 85, 85) : 0;
+        // Distribute them vertically so they "stick together" but stagger nicely.
+        // Formula creates rows across the 220px height.
+        const yOffset = 15 + (index % 5) * 32 + (index % 3) * 8; 
+        
+        return (
+          <div key={p.id} style={{
+            position: 'absolute',
+            left: `calc(${pct}% + 10px)`,
+            top: `${yOffset}px`,
+            transition: 'left 0.7s cubic-bezier(0.34,1.56,0.64,1)',
+            zIndex: 10 + Math.floor(pct),
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+          }}>
+            <span style={{ fontSize: 32 }}>🦆</span>
+            <span style={{
+              background: '#0f172a',
+              color: 'white',
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: 4,
+              marginTop: -6,
+              whiteSpace: 'nowrap',
+              maxWidth: 90,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {p.name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function CircleTimer({ value, max }) {
