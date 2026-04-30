@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
+import { API_URL } from './config';
 
-const URL = `http://${window.location.hostname}:3001`;
-export const socket = io(URL, {
+export const socket = io(API_URL, {
   autoConnect: false
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 
 export default function Register() {
   const [form, setForm] = useState({ company: '', name: '' });
@@ -15,7 +16,7 @@ export default function Register() {
     if (!form.name.trim()) return setError('Full name is required.');
     setLoading(true);
     try {
-      const res = await fetch(`http://${window.location.hostname}:3001/api/register`, {
+      const res = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

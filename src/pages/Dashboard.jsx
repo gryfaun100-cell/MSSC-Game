@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 import { socket } from '../socket';
 
 function NavBar({ user, onLogout }) {
@@ -34,7 +35,7 @@ export default function Dashboard({ user, onLogout }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`http://${window.location.hostname}:3001/api/rooms`).then(r => r.json()).then(setRooms);
+    fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms);
     socket.on('roomsUpdated', setRooms);
     return () => socket.off('roomsUpdated');
   }, []);

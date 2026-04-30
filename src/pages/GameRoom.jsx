@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { socket } from '../socket';
+import { API_URL } from '../config';
 import { RaceTrack, CircleTimer, Leaderboard, WinnersPodium, QuestionDisplay } from '../components/GameRoomParts';
 
 const LETTERS = ['A','B','C','D'];
@@ -77,7 +78,7 @@ export default function GameRoom({ user }) {
       socket.emit('rejoinRoom', { roomId, isAdmin: false, player: user });
     }
 
-    fetch(`http://${window.location.hostname}:3001/api/rooms/${roomId}`)
+    fetch(`${API_URL}/api/rooms/${roomId}`)
       .then(r => r.json())
       .then(d => {
         if (d && !d.error) {
