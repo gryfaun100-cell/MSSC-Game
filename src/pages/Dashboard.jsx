@@ -109,12 +109,12 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
                 <div className="room-actions">
                   <button
-                    className={room.status === 'waiting' ? 'btn btn-primary' : 'btn btn-outline'}
-                    disabled={room.status !== 'waiting'}
-                    onClick={() => room.status === 'waiting' && setJoinModal(room)}
+                    className={room.status === 'waiting' || room.status === 'playing' ? 'btn btn-primary' : 'btn btn-outline'}
+                    disabled={room.status === 'finished'}
+                    onClick={() => (room.status === 'waiting' || room.status === 'playing') && setJoinModal(room)}
                     style={{ fontSize: 13 }}
                   >
-                    {room.status === 'waiting' ? '🦆 Join Game' : room.status === 'playing' ? 'In Progress' : 'Finished'}
+                    {room.status === 'waiting' ? '🦆 Join Game' : room.status === 'playing' ? '🦆 Join Late' : 'Finished'}
                   </button>
                 </div>
               </div>

@@ -126,11 +126,17 @@ export default function AdminDashboard({ user, onLogout }) {
   const addQuestion = () => {
     if (!qForm.text.trim()) return alert('Enter a question.');
     if (qForm.type === 'multiple' && qForm.options.some(o => !o.trim())) return alert('Fill all answer options.');
-    setQuestions(prev => [...prev, { ...qForm, id: Date.now() }]);
+    const newQuestions = [...questions, { ...qForm, id: Date.now() }];
+    setQuestions(newQuestions);
     setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple' });
+    if (expandedRoom) socket.emit('updateRoomQuestions', { roomId: expandedRoom, questions: newQuestions });
   };
 
-  const removeQuestion = (id) => setQuestions(prev => prev.filter(q => q.id !== id));
+  const removeQuestion = (id) => {
+    const newQuestions = questions.filter(q => q.id !== id);
+    setQuestions(newQuestions);
+    if (expandedRoom) socket.emit('updateRoomQuestions', { roomId: expandedRoom, questions: newQuestions });
+  };
 
   const handleStartRoom = (roomId) => {
     if (questions.length === 0) return alert('Add at least one question before starting.');
@@ -201,7 +207,14 @@ export default function AdminDashboard({ user, onLogout }) {
                   {room.status === 'waiting' && (
                     <>
                       <button className="btn btn-outline" style={{ fontSize: 13 }}
-                        onClick={() => setExpandedRoom(expandedRoom === room.id ? null : room.id)}>
+                        onClick={() => {
+                          if (expandedRoom === room.id) {
+                            setExpandedRoom(null);
+                          } else {
+                            setExpandedRoom(room.id);
+                            setQuestions(room.questions || []);
+                          }
+                        }}>
                         ❓ Questions
                       </button>
                       <button className="btn btn-success" style={{ fontSize: 13 }} onClick={() => handleStartRoom(room.id)}>

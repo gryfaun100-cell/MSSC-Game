@@ -172,13 +172,17 @@ io.on('connection', (socket) => {
       existing.id = socket.id; socket.join(roomId);
       socket.emit('roomStateUpdate', room); return;
     }
-    if (room.status === 'waiting') {
+    if (room.status === 'waiting' || room.status === 'playing') {
       room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false });
       socket.join(roomId);
       io.to(roomId).emit('roomStateUpdate', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+      if (room.status === 'playing') {
+        socket.emit('gameStarted', room);
+        socket.emit('nextQuestion', { room, questionIndex: room.currentQuestionIndex });
+      }
     } else {
-      socket.emit('error', { message: 'Game already started.' });
+      socket.emit('error', { message: 'Game already finished.' });
     }
   });
 
