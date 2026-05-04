@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
 import { API_URL } from '../config';
 
+const PARTICLES = Array.from({ length: 15 }).map((_, i) => {
+  const size = Math.random() * 8 + 4;
+  return (
+    <div key={`p-${i}`} className="particle" style={{
+      width: size, height: size,
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${Math.random() * 10 + 10}s`,
+      animationDelay: `${Math.random() * 5}s`
+    }} />
+  );
+});
+
+const DUCKS = Array.from({ length: 4 }).map((_, i) => (
+  <div key={`d-${i}`} className="duck-float" style={{
+    left: `${Math.random() * 90 + 5}%`,
+    animationDuration: `${Math.random() * 15 + 15}s`,
+    animationDelay: `${Math.random() * 10}s`,
+    fontSize: Math.random() * 16 + 20
+  }}>🦆</div>
+));
+
 export default function Login({ onLogin }) {
   const [modalType, setModalType] = useState(null); // 'guest' or 'host'
   const [form, setForm] = useState({ name: '', company: '', email: '', password: '' });
@@ -38,26 +59,35 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="auth-bg">
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 64, marginBottom: 12, filter: 'drop-shadow(0 4px 16px rgba(37,99,235,0.25))' }} />
-        <div style={{ fontSize: 13, color: 'var(--bg-white)', fontWeight: 500 }}>Duck Race — Multiplayer Quiz Game</div>
+      <div className="particles-container">
+        {PARTICLES}
+        {DUCKS}
       </div>
 
-      <div className="auth-card" style={{ padding: '40px 32px' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, textAlign: 'center', marginBottom: 8, color: 'var(--primary)' }}>Join Game</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: 32, fontSize: 14 }}>Select how you want to proceed</p>
+      <div style={{ textAlign: 'center', marginBottom: 32, zIndex: 1 }}>
+        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 72, marginBottom: 16, filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} />
+        <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.5px' }}>Multiplayer Quiz Game</div>
+      </div>
+
+      <div className="auth-card" style={{ padding: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: 99, fontSize: 12, color: 'white', fontWeight: 600, marginBottom: 20, border: '1px solid rgba(255,255,255,0.2)' }}>
+            <span style={{ width: 8, height: 8, background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }}></span>
+            12 Players Online
+          </div>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: 'white', marginBottom: 8, textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>Join Game</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.5 }}>Join a live quiz and race your duck to the finish! 🏆</p>
+        </div>
 
         <button 
-          className="btn btn-primary-full" 
-          style={{ height: 52, fontSize: 16, marginBottom: 16, background: 'linear-gradient(135deg, var(--primary), var(--purple))', border: 'none', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)' }}
+          className="btn-guest" 
           onClick={() => setModalType('guest')}
         >
-          🦆 Continue as Guest
+          <span style={{ fontSize: 22 }}>🦆</span> Continue as Guest
         </button>
 
         <button 
-          className="btn" 
-          style={{ width: '100%', background: 'transparent', color: 'var(--text-light)', border: 'none', fontSize: 13, fontWeight: 500, textDecoration: 'underline', opacity: 0.8 }}
+          className="btn-host" 
           onClick={() => setModalType('host')}
         >
           Login as Host
@@ -120,7 +150,7 @@ export default function Login({ onLogin }) {
         </div>
       )}
 
-      <p style={{ marginTop: 24, fontSize: 12, color: 'var(--text-light)' }}>© 2026 Mustard Seed Systems Corporation</p>
+      <p style={{ marginTop: 32, fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 500, zIndex: 1 }}>© 2026 Mustard Seed Systems Corporation</p>
     </div>
   );
 }
