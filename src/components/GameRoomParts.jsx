@@ -1,7 +1,7 @@
 import React from 'react';
 const L = ['A','B','C','D'];
 
-export function RaceTrack({ players, totalQ }) {
+export function RaceTrack({ players, totalPoints }) {
   if (!players.length) return <div style={{textAlign:'center',padding:24,color:'#94a3b8'}}>🦆 Waiting for players...</div>;
   
   return (
@@ -12,10 +12,11 @@ export function RaceTrack({ players, totalQ }) {
       
       {/* Swarm of Ducks */}
       {players.map((p, index) => {
-        const pct = totalQ > 0 ? Math.min((p.score / totalQ) * 85, 85) : 0;
+        const pct = totalPoints > 0 ? Math.min((p.score / totalPoints) * 85, 85) : 0;
         // Distribute them vertically so they "stick together" but stagger nicely.
         // Formula creates rows across the 220px height.
         const yOffset = 15 + (index % 5) * 32 + (index % 3) * 8; 
+        const isLight = p.color === '#f8fafc' || p.color === '#fbbf24' || p.color === '#eab308';
         
         return (
           <div key={p.id} style={{
@@ -29,19 +30,22 @@ export function RaceTrack({ players, totalQ }) {
             alignItems: 'center',
             filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
           }}>
-            <span style={{ fontSize: 32 }}>🦆</span>
+            <div style={{width: 38, height: 38, borderRadius: '50%', background: p.color || '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 -2px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.4)'}}>
+              <span style={{ fontSize: 24, transform: 'scaleX(-1)', display: 'inline-block' }}>🦆</span>
+            </div>
             <span style={{
-              background: '#0f172a',
-              color: 'white',
+              background: p.color || '#0f172a',
+              color: isLight ? '#0f172a' : 'white',
               fontSize: 10,
-              fontWeight: 700,
+              fontWeight: 800,
               padding: '2px 6px',
               borderRadius: 4,
               marginTop: -6,
               whiteSpace: 'nowrap',
               maxWidth: 90,
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              border: '1px solid rgba(0,0,0,0.1)'
             }}>
               {p.name}
             </span>
@@ -77,7 +81,7 @@ export function Leaderboard({ players, revealPhase }) {
     }
     return <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:10,marginBottom:6,background:bg,border:`1.5px solid ${border}`,transition:'all 0.4s ease'}}>
       <span style={{fontSize:18,width:28}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
-      <div style={{width:28,height:28,borderRadius:'50%',background:'#2563eb',color:'white',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{p.name[0]?.toUpperCase()}</div>
+      <div style={{width:28,height:28,borderRadius:'50%',background:p.color||'#2563eb',color:(p.color==='#f8fafc'||p.color==='#fbbf24'||p.color==='#eab308')?'#0f172a':'white',fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(0,0,0,0.1)'}}>{p.name[0]?.toUpperCase()}</div>
       <span style={{flex:1,fontSize:13,fontWeight:600,color:textColor}}>{p.name}</span>
       <span style={{fontSize:14,fontWeight:700,color:'#2563eb'}}>{p.score}pts</span>
       {revealPhase && <span style={{fontSize:16}}>{!p.answered?'⏳':p.lastAnswerCorrect?'✅':'❌'}</span>}
@@ -90,7 +94,7 @@ export function WinnersPodium({ players }) {
   const [first,second,third]=sorted;
   const PodiumBlock=({player,rank,height,medal})=>player?<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
     <div style={{fontSize:32}}>{medal}</div>
-    <div style={{width:56,height:56,borderRadius:'50%',background:rank===1?'linear-gradient(135deg,#fbbf24,#f59e0b)':rank===2?'#94a3b8':'#cd7c2f',color:'white',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>{player.name[0]?.toUpperCase()}</div>
+    <div style={{width:56,height:56,borderRadius:'50%',background:player.color||'#2563eb',color:(player.color==='#f8fafc'||player.color==='#fbbf24'||player.color==='#eab308')?'#0f172a':'white',border:'2px solid rgba(0,0,0,0.1)',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>{player.name[0]?.toUpperCase()}</div>
     <div style={{fontSize:13,fontWeight:700,textAlign:'center',maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{player.name}</div>
     <div style={{fontSize:12,color:'#64748b'}}>{player.score} pts</div>
     <div style={{width:90,height,background:rank===1?'linear-gradient(180deg,#fbbf24,#f59e0b)':rank===2?'linear-gradient(180deg,#cbd5e1,#94a3b8)':'linear-gradient(180deg,#d97706,#b45309)',borderRadius:'8px 8px 0 0',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:8,color:'white',fontWeight:800,fontSize:20}}>#{rank}</div>

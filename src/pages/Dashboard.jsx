@@ -60,15 +60,19 @@ function NavBar({ user, onLogout }) {
   );
 }
 
+const DUCK_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#f97316', '#a855f7', '#ec4899', '#06b6d4', '#84cc16', '#6366f1', '#8b5cf6', '#fbbf24', '#94a3b8', '#14b8a6', '#d946ef', '#78350f', '#0f172a', '#f8fafc', '#1e3a8a', '#fb7185'];
+
 export default function Dashboard({ user, onLogout }) {
   const [rooms, setRooms] = useState([]);
   const [joinModal, setJoinModal] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms);
-    socket.on('roomsUpdated', setRooms);
-    return () => socket.off('roomsUpdated');
+    const onRoomsUpdated = (newRooms) => setRooms(newRooms);
+    socket.on('roomsUpdated', onRoomsUpdated);
+    return () => socket.off('roomsUpdated', onRoomsUpdated);
   }, []);
 
   const getBadge = (status) => {
@@ -111,7 +115,13 @@ export default function Dashboard({ user, onLogout }) {
                   <button
                     className={room.status === 'waiting' || room.status === 'playing' ? 'btn btn-primary' : 'btn btn-outline'}
                     disabled={room.status === 'finished'}
-                    onClick={() => (room.status === 'waiting' || room.status === 'playing') && setJoinModal(room)}
+                    onClick={() => {
+                      if (room.status === 'waiting' || room.status === 'playing') {
+                        setJoinModal(room);
+                        const avail = DUCK_COLORS.find(c => !room.usedColors?.includes(c));
+                        setSelectedColor(avail || DUCK_COLORS[0]);
+                      }
+                    }}
                     style={{ fontSize: 13 }}
                   >
                     {room.status === 'waiting' ? '🦆 Join Game' : room.status === 'playing' ? '🦆 Join Late' : 'Finished'}
@@ -131,18 +141,30 @@ export default function Dashboard({ user, onLogout }) {
               <button className="modal-close" onClick={() => setJoinModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
-                <div style={{ fontSize: 56, marginBottom: 12 }}>🦆</div>
+              <div style={{ textAlign: 'center', padding: '8px 0 10px' }}>
+                <div style={{ fontSize: 56, marginBottom: 12, display: 'inline-block', filter: `drop-shadow(0 0 8px ${selectedColor})` }}>🦆</div>
                 <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{joinModal.name}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{joinModal.playerCount} player(s) waiting</div>
               </div>
-              <div style={{ background: 'var(--primary-bg)', border: '1px solid #bfdbfe', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: 'var(--primary-dark)' }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, textAlign: 'center', color: 'var(--text)' }}>Choose your Duck Color:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                  {DUCK_COLORS.map(c => {
+                    const isUsed = joinModal.usedColors?.includes(c);
+                    return (
+                      <button key={c} disabled={isUsed} onClick={() => setSelectedColor(c)}
+                        style={{ width: 32, height: 32, borderRadius: '50%', background: c, border: selectedColor === c ? '3px solid #0f172a' : '2px solid transparent', opacity: isUsed ? 0.2 : 1, cursor: isUsed ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: selectedColor === c ? '0 0 0 2px white inset' : 'none' }} />
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ background: 'var(--primary-bg)', border: '1px solid #bfdbfe', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: 'var(--primary-dark)', textAlign: 'center' }}>
                 Joining as <strong>{user.name}</strong>. Get ready to race! 🏁
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setJoinModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => { navigate(`/room/${joinModal.id}`); setJoinModal(null); }}>
+              <button className="btn btn-primary" onClick={() => { navigate(`/room/${joinModal.id}`, { state: { color: selectedColor } }); setJoinModal(null); }}>
                 ▶ Join Now
               </button>
             </div>

@@ -65,34 +65,59 @@ function NavBar({ user, onLogout }) {
 function CreateRoomModal({ onClose, onCreated }) {
   const [roomName, setRoomName] = useState('');
   const [timePerQ, setTimePerQ] = useState(30);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = (e) => { 
     e.preventDefault(); 
-    if (!roomName.trim()) return alert("Please enter a room name.");
+    setError('');
+    if (!roomName.trim()) {
+      setError("Please enter a room name.");
+      return;
+    }
     const t = parseInt(timePerQ, 10);
-    if (isNaN(t) || t < 5) return alert("Timer must be at least 5 seconds.");
+    if (isNaN(t) || t < 5) {
+      setError("Timer must be at least 5 seconds.");
+      return;
+    }
+    if (!socket.connected) {
+      setError("Cannot connect to server. Is the backend running?");
+      return;
+    }
+
+    setLoading(true);
     onCreated({ roomName, timePerQuestion: t }); 
+    
+    // Safety timeout in case server doesn't respond
+    setTimeout(() => {
+      setLoading(false);
+    }, 5000);
   };
+
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" onClick={(e) => !loading && e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 460 }}>
         <div className="modal-header">
           <span className="modal-title">🎮 Create Game Room</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          {!loading && <button className="modal-close" onClick={onClose}>✕</button>}
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
+            {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, marginBottom: 16 }}>⚠️ {error}</div>}
             <div className="form-group">
               <label className="form-label">Room Name</label>
-              <input className="form-input" type="text" placeholder="e.g. Training Quiz Round 1" value={roomName} onChange={(e) => setRoomName(e.target.value)} autoFocus />
+              <input className="form-input" type="text" placeholder="e.g. Training Quiz Round 1" value={roomName} onChange={(e) => setRoomName(e.target.value)} autoFocus disabled={loading} />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Time per Question (seconds)</label>
-              <input className="form-input" type="number" min={5} max={120} value={timePerQ} onChange={(e) => setTimePerQ(e.target.value)} />
+              <input className="form-input" type="number" min={5} max={120} value={timePerQ} onChange={(e) => setTimePerQ(e.target.value)} disabled={loading} />
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Create Room</button>
+            <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Room'}
+            </button>
           </div>
         </form>
       </div>
@@ -107,16 +132,27 @@ export default function AdminDashboard({ user, onLogout }) {
   const [deleteRoomId, setDeleteRoomId] = useState(null);
   const [expandedRoom, setExpandedRoom] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple' });
+  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10 });
 
   const totalPlayers = rooms.reduce((s, r) => s + r.playerCount, 0);
   const activeGames = rooms.filter(r => r.status === 'playing').length;
 
   useEffect(() => {
     fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms);
-    socket.on('roomsUpdated', setRooms);
-    socket.on('roomCreated', (room) => { setExpandedRoom(room.id); setShowModal(false); });
-    return () => { socket.off('roomsUpdated'); socket.off('roomCreated'); };
+    
+    const onRoomsUpdated = (newRooms) => setRooms(newRooms);
+    const onRoomCreated = (room) => { 
+      setExpandedRoom(room.id); 
+      setShowModal(false); 
+    };
+
+    socket.on('roomsUpdated', onRoomsUpdated);
+    socket.on('roomCreated', onRoomCreated);
+    
+    return () => { 
+      socket.off('roomsUpdated', onRoomsUpdated); 
+      socket.off('roomCreated', onRoomCreated); 
+    };
   }, []);
 
   const handleCreateRoom = ({ roomName, timePerQuestion }) => {
@@ -128,7 +164,7 @@ export default function AdminDashboard({ user, onLogout }) {
     if (qForm.type === 'multiple' && qForm.options.some(o => !o.trim())) return alert('Fill all answer options.');
     const newQuestions = [...questions, { ...qForm, id: Date.now() }];
     setQuestions(newQuestions);
-    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple' });
+    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10 });
     if (expandedRoom) socket.emit('updateRoomQuestions', { roomId: expandedRoom, questions: newQuestions });
   };
 
@@ -212,14 +248,18 @@ export default function AdminDashboard({ user, onLogout }) {
                             setExpandedRoom(null);
                           } else {
                             setExpandedRoom(room.id);
-                            setQuestions(room.questions || []);
+                            fetch(`${API_URL}/api/rooms/${room.id}`).then(r => r.json()).then(d => setQuestions(d.questions || []));
                           }
                         }}>
                         ❓ Questions
                       </button>
-                      <button className="btn btn-success" style={{ fontSize: 13 }} onClick={() => handleStartRoom(room.id)}>
-                        ▶ Start
-                      </button>
+                      {room.playerCount === 0 ? (
+                        <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, padding: '0 8px' }}>Waiting for players...</span>
+                      ) : (
+                        <button className="btn btn-success" style={{ fontSize: 13 }} onClick={() => handleStartRoom(room.id)}>
+                          ▶ Start
+                        </button>
+                      )}
                     </>
                   )}
                   {room.status === 'playing' && (
@@ -283,6 +323,11 @@ export default function AdminDashboard({ user, onLogout }) {
                           onChange={e => { const ops = [...qForm.options]; ops[0] = e.target.value; setQForm(f => ({ ...f, options: ops, correctAnswerIndex: 0 })); }} />
                       </div>
                     )}
+                    <div className="form-group">
+                      <label className="form-label">Points</label>
+                      <input className="form-input" type="number" min={1} value={qForm.points}
+                        onChange={e => setQForm(f => ({ ...f, points: Number(e.target.value) }))} />
+                    </div>
                     <button className="btn btn-primary" style={{ width: '100%' }} onClick={addQuestion}>➕ Add Question</button>
                   </div>
 
@@ -295,7 +340,7 @@ export default function AdminDashboard({ user, onLogout }) {
                         <span className="q-num">{idx + 1}.</span>
                         <div style={{ flex: 1 }}>
                           <div className="q-text">{q.text}</div>
-                          <div className="q-sub">{q.type === 'multiple' ? `Answer: ${LETTERS[q.correctAnswerIndex]} • 4 options` : `Answer: ${q.options[0]}`}</div>
+                          <div className="q-sub">{q.type === 'multiple' ? `Answer: ${LETTERS[q.correctAnswerIndex]} • 4 options` : `Answer: ${q.options[0]}`} • {q.points || 10} pts</div>
                         </div>
                         <button onClick={() => removeQuestion(q.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 4 }}>🗑</button>
                       </div>

@@ -17,37 +17,51 @@ const rooms = {};
 const roomSummary = (r) => ({
   id: r.id, name: r.name, status: r.status,
   playerCount: r.players.length, questionCount: r.questions.length,
-  timePerQuestion: r.timePerQuestion ?? 30
+  timePerQuestion: r.timePerQuestion ?? 30,
+  usedColors: r.players.map(p => p.color)
 });
 
+const DUCK_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#f97316', '#a855f7', '#ec4899', '#06b6d4', '#84cc16', '#6366f1', '#8b5cf6', '#fbbf24', '#94a3b8', '#14b8a6', '#d946ef', '#78350f', '#0f172a', '#f8fafc', '#1e3a8a', '#fb7185'];
+
+function assignColor(room) {
+  const used = room.players.map(p => p.color);
+  const avail = DUCK_COLORS.filter(c => !used.includes(c));
+  return avail.length > 0 ? avail[0] : DUCK_COLORS[Math.floor(Math.random() * DUCK_COLORS.length)];
+}
+
+const roomTimers = {};
+
 // ── Question timer helpers ──────────────────────────────────────────────
-function clearRoomTimers(room) {
-  if (room._qTimer) { clearTimeout(room._qTimer); room._qTimer = null; }
-  if (room._revealInterval) { clearInterval(room._revealInterval); room._revealInterval = null; }
+function clearRoomTimers(roomId) {
+  if (roomTimers[roomId]) {
+    if (roomTimers[roomId]._qTimer) clearInterval(roomTimers[roomId]._qTimer);
+    if (roomTimers[roomId]._revealInterval) clearInterval(roomTimers[roomId]._revealInterval);
+    delete roomTimers[roomId];
+  }
 }
 
 function startQuestionTimer(roomId) {
   const room = rooms[roomId];
   if (!room || room.status !== 'playing') return;
-  clearRoomTimers(room);
-  const secs = room.timePerQuestion || 30;
-  room.questionStartedAt = Date.now();
-  // Emit tick every second so clients can sync
-  room._qTimer = setTimeout(() => triggerReveal(roomId), secs * 1000);
+  clearRoomTimers(roomId);
+  roomTimers[roomId] = {};
+  room.timeLeft = parseInt(room.timePerQuestion || 30, 10);
+  
+  // Strict server-side tick to ensure perfect sync
+  roomTimers[roomId]._qTimer = setInterval(() => {
+    room.timeLeft -= 1;
+    io.to(roomId).emit('timerTick', room.timeLeft);
+    if (room.timeLeft <= 0) {
+      triggerReveal(roomId);
+    }
+  }, 1000);
 }
 
 function triggerReveal(roomId) {
   const room = rooms[roomId];
   if (!room || room.status !== 'playing') return;
-  clearRoomTimers(room);
-  // Tell only the HOST to show the 'Reveal Answer' button
-  const hostSocket = io.sockets.sockets.get(room.hostId);
-  if (hostSocket) {
-    hostSocket.emit('readyToReveal', { questionIndex: room.currentQuestionIndex });
-  } else {
-    // Host not connected — auto-reveal
-    broadcastReveal(roomId);
-  }
+  clearRoomTimers(roomId);
+  broadcastReveal(roomId);
 }
 
 function broadcastReveal(roomId) {
@@ -62,12 +76,16 @@ function broadcastReveal(roomId) {
   });
   let count = 3;
   io.to(roomId).emit('revealCountdown', count);
-  room._revealInterval = setInterval(() => {
+  
+  if (!roomTimers[roomId]) roomTimers[roomId] = {};
+  roomTimers[roomId]._revealInterval = setInterval(() => {
     count -= 1;
     io.to(roomId).emit('revealCountdown', count);
     if (count <= 0) {
-      clearInterval(room._revealInterval);
-      room._revealInterval = null;
+      if (roomTimers[roomId] && roomTimers[roomId]._revealInterval) {
+        clearInterval(roomTimers[roomId]._revealInterval);
+        roomTimers[roomId]._revealInterval = null;
+      }
       advanceQuestion(roomId);
     }
   }, 1000);
@@ -135,7 +153,7 @@ io.on('connection', (socket) => {
 
   socket.on('updateRoomQuestions', ({ roomId, questions }) => {
     const room = rooms[roomId];
-    if (room && room.hostId === socket.id) {
+    if (room) {
       room.questions = questions;
       io.to(roomId).emit('roomStateUpdate', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
@@ -155,7 +173,7 @@ io.on('connection', (socket) => {
         existing.id = socket.id;
         socket.emit('roomStateUpdate', room);
       } else if (room.status === 'waiting') {
-        room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false });
+        room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room) });
         io.to(roomId).emit('roomStateUpdate', room);
         io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
       } else {
@@ -173,7 +191,7 @@ io.on('connection', (socket) => {
       socket.emit('roomStateUpdate', room); return;
     }
     if (room.status === 'waiting' || room.status === 'playing') {
-      room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false });
+      room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room) });
       socket.join(roomId);
       io.to(roomId).emit('roomStateUpdate', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
@@ -188,7 +206,7 @@ io.on('connection', (socket) => {
 
   socket.on('startGame', (roomId) => {
     const room = rooms[roomId];
-    if (!room || room.hostId !== socket.id) return;
+    if (!room) return;
     if (room.questions.length === 0)
       return socket.emit('error', { message: 'Add at least one question before starting.' });
     room.status = 'playing';
@@ -199,10 +217,18 @@ io.on('connection', (socket) => {
     startQuestionTimer(roomId);
   });
 
+  socket.on('skipToNextQuestion', (roomId) => {
+    const room = rooms[roomId];
+    if (room && room.status === 'playing') {
+      clearRoomTimers(roomId);
+      advanceQuestion(roomId);
+    }
+  });
+
   socket.on('hostRevealAnswer', (roomId) => {
     const room = rooms[roomId];
     if (room && room.hostId === socket.id && room.status === 'playing') {
-      clearRoomTimers(room);
+      clearRoomTimers(roomId);
       broadcastReveal(roomId);
     }
   });
@@ -223,7 +249,7 @@ io.on('connection', (socket) => {
       const ca = (question.options[question.correctAnswerIndex] ?? question.options[0] ?? '').trim().toLowerCase();
       correct = ua === ca;
     }
-    if (correct) player.score += 1;
+    if (correct) player.score += (question.points || 10);
     player.answered = true;
     player.lastAnswerCorrect = correct;
 
@@ -243,8 +269,8 @@ io.on('connection', (socket) => {
 
   socket.on('endGame', (roomId) => {
     const room = rooms[roomId];
-    if (room && room.hostId === socket.id) {
-      clearRoomTimers(room);
+    if (room) {
+      clearRoomTimers(roomId);
       room.status = 'finished';
       io.to(roomId).emit('gameEnded', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
@@ -253,8 +279,8 @@ io.on('connection', (socket) => {
 
   socket.on('deleteRoom', (roomId) => {
     const room = rooms[roomId];
-    if (room && room.hostId === socket.id) {
-      clearRoomTimers(room);
+    if (room) {
+      clearRoomTimers(roomId);
       io.to(roomId).emit('gameEnded', room);
       delete rooms[roomId];
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));

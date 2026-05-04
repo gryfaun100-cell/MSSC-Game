@@ -1,11 +1,46 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Users, Trophy, Clock, CheckCircle2, XCircle, LogOut, LayoutDashboard, Target } from 'lucide-react';
 import { socket } from '../socket';
 import { API_URL } from '../config';
 import { RaceTrack, CircleTimer, Leaderboard, WinnersPodium, QuestionDisplay } from '../components/GameRoomParts';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(type) {
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now); osc.stop(now + 0.5);
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now); osc.stop(now + 0.4);
+    } else if (type === 'start') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(554.37, now + 0.15);
+      osc.frequency.setValueAtTime(659.25, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.start(now); osc.stop(now + 0.6);
+    }
+  } catch(e) {}
+}
 
 function NavBar({ user, isAdmin, roomName, onBack }) {
   return (
@@ -31,6 +66,7 @@ function NavBar({ user, isAdmin, roomName, onBack }) {
 export default function GameRoom({ user }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = user.role === 'admin';
   const gameAreaRef = useRef(null);
 
@@ -45,7 +81,6 @@ export default function GameRoom({ user }) {
   const [revealCountdown, setRevealCountdown] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showWinners, setShowWinners] = useState(false);
-  const [readyToReveal, setReadyToReveal] = useState(false); // host sees Reveal Answer button
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -64,19 +99,14 @@ export default function GameRoom({ user }) {
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Client-side countdown — server is the authoritative timer
-  useEffect(() => {
-    if (revealPhase || !room || room.status !== 'playing') return;
-    if (qTimeLeft === null || qTimeLeft <= 0) return;
-    const t = setTimeout(() => setQTimeLeft(p => Math.max(0, p - 1)), 1000);
-    return () => clearTimeout(t);
-  }, [qTimeLeft, revealPhase, room]);
+  // The server actively emits 'timerTick' every second, so we no longer need a client-side countdown.
 
   useEffect(() => {
     if (isAdmin) {
       socket.emit('rejoinRoom', { roomId, isAdmin: true });
     } else {
-      socket.emit('rejoinRoom', { roomId, isAdmin: false, player: user });
+      const chosenColor = location.state?.color;
+      socket.emit('rejoinRoom', { roomId, isAdmin: false, player: { ...user, color: chosenColor } });
     }
 
     fetch(`${API_URL}/api/rooms/${roomId}`)
@@ -90,53 +120,60 @@ export default function GameRoom({ user }) {
       })
       .catch(() => { });
 
-    socket.on('roomStateUpdate', (r) => {
+    const onRoomStateUpdate = (r) => {
       setRoom(r);
-      // Keep timer in sync with room's timePerQuestion always
       setQTimeLeft(prev => prev === null ? (r.timePerQuestion || 30) : prev);
-    });
-
-    socket.on('gameStarted', (r) => {
+    };
+    const onGameStarted = (r) => {
       setRoom(r);
       setAnswered(false); setAnswerResult(null); setRevealPhase(false);
-      // Use actual timePerQuestion from room
       setQTimeLeft(r.timePerQuestion || 30);
-    });
-
-    socket.on('questionReveal', (data) => {
+      playTone('start');
+    };
+    const onQuestionReveal = (data) => {
       setRevealPhase(true);
       setRevealData(data);
       setRevealCountdown(3);
-      setReadyToReveal(false); // hide the button once revealed
-    });
-
-    socket.on('revealCountdown', (n) => {
-      setRevealCountdown(n);
-    });
-
-    socket.on('nextQuestion', ({ room: r }) => {
+      const meData = data.players?.find(p => p.id === socket.id);
+      if (meData && meData.answered) {
+        if (meData.lastAnswerCorrect) playTone('correct');
+        else playTone('wrong');
+      }
+    };
+    const onRevealCountdown = (n) => setRevealCountdown(n);
+    const onTimerTick = (timeLeft) => setQTimeLeft(timeLeft);
+    const onNextQuestion = ({ room: r }) => {
       setRoom(r);
       setRevealPhase(false); setRevealData(null); setRevealCountdown(null);
       setAnswered(false); setAnswerResult(null); setOpenText('');
-      setReadyToReveal(false);
       setQTimeLeft(r.timePerQuestion || 30);
-    });
-
-    socket.on('answerResult', (result) => {
+    };
+    const onAnswerResult = (result) => {
       setAnswerResult(result); setAnswered(true);
-    });
+    };
+    const onGameEnded = (r) => setRoom(r);
+    const onError = (e) => setError(e.message);
 
-    socket.on('readyToReveal', () => {
-      setReadyToReveal(true);
-      setQTimeLeft(0);
-    });
-
-    socket.on('gameEnded', (r) => { setRoom(r); });
-    socket.on('error', (e) => setError(e.message));
+    socket.on('roomStateUpdate', onRoomStateUpdate);
+    socket.on('gameStarted', onGameStarted);
+    socket.on('questionReveal', onQuestionReveal);
+    socket.on('revealCountdown', onRevealCountdown);
+    socket.on('timerTick', onTimerTick);
+    socket.on('nextQuestion', onNextQuestion);
+    socket.on('answerResult', onAnswerResult);
+    socket.on('gameEnded', onGameEnded);
+    socket.on('error', onError);
 
     return () => {
-      ['roomStateUpdate', 'gameStarted', 'questionReveal', 'revealCountdown', 'nextQuestion', 'answerResult', 'readyToReveal', 'gameEnded', 'error']
-        .forEach(e => socket.off(e));
+      socket.off('roomStateUpdate', onRoomStateUpdate);
+      socket.off('gameStarted', onGameStarted);
+      socket.off('questionReveal', onQuestionReveal);
+      socket.off('revealCountdown', onRevealCountdown);
+      socket.off('timerTick', onTimerTick);
+      socket.off('nextQuestion', onNextQuestion);
+      socket.off('answerResult', onAnswerResult);
+      socket.off('gameEnded', onGameEnded);
+      socket.off('error', onError);
     };
   }, [roomId, user, isAdmin]);
 
@@ -186,7 +223,10 @@ export default function GameRoom({ user }) {
               {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Fullscreen'}
             </button>
             {room.status === 'playing' && (
-              <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={() => socket.emit('endGame', roomId)}>⏹ End Game</button>
+              <>
+                <button className="btn btn-warning" style={{ fontSize: 13, background: '#eab308', color: 'white', borderColor: '#ca8a04', border: '1px solid' }} onClick={() => socket.emit('skipToNextQuestion', roomId)}>⏭ Skip Question</button>
+                <button className="btn btn-danger" style={{ fontSize: 13 }} onClick={() => socket.emit('endGame', roomId)}>⏹ End Game</button>
+              </>
             )}
             {finished && (
               <button className="btn btn-primary" style={{ fontSize: 13 }} onClick={() => setShowWinners(true)}>🏆 View the Winners</button>
@@ -205,14 +245,14 @@ export default function GameRoom({ user }) {
                 {room.status === 'playing' && <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>🔴 LIVE</span>}
               </div>
               <div style={{ padding: '20px 24px', minHeight: 140 }}>
-                <RaceTrack players={room.players ?? []} totalQ={totalQ} />
+                <RaceTrack players={room.players ?? []} totalPoints={room.questions?.reduce((s, q) => s + (q.points || 10), 0) || 1} />
               </div>
             </div>
 
             {/* Current Question panel — bottom left */}
-            <div style={{ background: 'white', border: `2px solid ${revealPhase ? '#16a34a' : readyToReveal ? '#f59e0b' : '#bfdbfe'}`, borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'white', border: `2px solid ${revealPhase ? '#16a34a' : '#bfdbfe'}`, borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {room.status === 'playing' && currentQ ? <>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${revealPhase ? '#bbf7d0' : readyToReveal ? '#fde68a' : '#dbeafe'}`, background: revealPhase ? '#f0fdf4' : readyToReveal ? '#fffbeb' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${revealPhase ? '#bbf7d0' : '#dbeafe'}`, background: revealPhase ? '#f0fdf4' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>📋 Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
                     <span style={{ background: '#eff6ff', color: '#3333aa', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
@@ -222,14 +262,8 @@ export default function GameRoom({ user }) {
                       <span style={{ background: '#fef9c3', color: '#a16207', padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700, animation: 'pulse 0.5s ease infinite alternate' }}>Next in {revealCountdown}s...</span>
                     )}
                   </div>
-                  {/* Timer OR Reveal button */}
-                  {!revealPhase && !readyToReveal && <CircleTimer value={qTimeLeft ?? room.timePerQuestion ?? 30} max={room.timePerQuestion || 30} />}
-                  {readyToReveal && !revealPhase && (
-                    <button onClick={() => socket.emit('hostRevealAnswer', roomId)}
-                      style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', border: 'none', borderRadius: 10, fontWeight: 800, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 14px rgba(245,158,11,0.4)', animation: 'pulse 0.8s ease infinite alternate', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-                      🎯 Reveal Answer
-                    </button>
-                  )}
+                  {/* Timer */}
+                  {!revealPhase && <CircleTimer value={qTimeLeft ?? room.timePerQuestion ?? 30} max={room.timePerQuestion || 30} />}
                   {revealPhase && <div style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>✅ Revealed</div>}
                 </div>
                 <div style={{ padding: 20, flex: 1 }}>
@@ -277,7 +311,7 @@ export default function GameRoom({ user }) {
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
                     <span style={{ fontSize: 14, width: 24, color: '#94a3b8' }}>#{i + 1}</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{p.name}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#2563eb' }}>{p.score}/{totalQ}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#2563eb' }}>{p.score} pts</span>
                   </div>
                 ))}
               </div>
@@ -294,41 +328,42 @@ export default function GameRoom({ user }) {
   const me = room.players?.find(p => p.id === socket.id);
 
   if (room.status === 'waiting') return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center', padding: 32 }}>
-        <div style={{ fontSize: 64 }}>🦆</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center', padding: 32, color: 'white' }}>
+        <div style={{ fontSize: 64, transform: 'scaleX(-1)' }}>🦆</div>
         <h2 style={{ fontSize: 22, fontWeight: 800 }}>Ready to Race!</h2>
-        <div style={{ width: 36, height: 36, border: '4px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <p style={{ color: '#64748b' }}>Waiting for host to start...</p>
+        <div style={{ width: 36, height: 36, border: '4px solid rgba(255,255,255,0.2)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: 'rgba(255,255,255,0.8)' }}>Waiting for host to start...</p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
   if (room.status === 'finished') return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, padding: 24, textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, padding: 24, textAlign: 'center', color: 'white' }}>
         <div style={{ fontSize: 64 }}>🏁</div>
         <h2 style={{ fontSize: 26, fontWeight: 800 }}>Race Finished!</h2>
-        {me && <p style={{ fontSize: 16, color: '#64748b' }}>Your Score: <strong style={{ color: '#2563eb', fontSize: 22 }}>{me.score}</strong> / {totalQ}</p>}
+        {me && <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>Your Score: <strong style={{ color: '#fbbf24', fontSize: 22 }}>{me.score}</strong> pts</p>}
         {(() => { const s = [...room.players].sort((a, b) => b.score - a.score); const r = s.findIndex(p => p.id === socket.id) + 1; return r === 1 ? <div style={{ fontSize: 36 }}>🥇 You Won!</div> : r === 2 ? <div style={{ fontSize: 28 }}>🥈 2nd Place!</div> : r === 3 ? <div style={{ fontSize: 28 }}>🥉 3rd Place!</div> : null; })()}
         <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, width: '100%', maxWidth: 400 }}>
           <div style={{ fontWeight: 700, marginBottom: 12 }}>🏆 Final Rankings</div>
           <Leaderboard players={room.players ?? []} revealPhase={false} />
         </div>
-        <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>Back to Lobby</button>
+        <button className="btn btn-outline" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }} onClick={() => navigate('/dashboard')}>Back to Lobby</button>
       </div>
     </div>
   );
 
   // Playing
   const myScore = me?.score ?? 0;
-  const pct = totalQ > 0 ? Math.min((myScore / totalQ) * 82, 82) : 0;
+  const totalPoints = room.questions?.reduce((sum, q) => sum + (q.points || 10), 0) || 1;
+  const pct = totalPoints > 0 ? Math.min((myScore / totalPoints) * 82, 82) : 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
 
       {/* Feedback toast */}
@@ -353,7 +388,7 @@ export default function GameRoom({ user }) {
             </div>
             <div style={{ height: 36, background: 'linear-gradient(90deg,#bae6fd,#38bdf8)', borderRadius: 99, position: 'relative', overflow: 'hidden', border: '2px solid #7dd3fc' }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: 'rgba(255,255,255,0.25)', transition: 'width 0.7s ease' }} />
-              <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: `calc(${pct}% + 2px)`, fontSize: 20, transition: 'left 0.7s ease' }}>🦆</span>
+              <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%) scaleX(-1)', left: `calc(${pct}% + 2px)`, fontSize: 20, transition: 'left 0.7s ease', display: 'inline-block' }}>🦆</span>
               <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}>🏁</span>
             </div>
           </div>
