@@ -5,61 +5,77 @@ export function RaceTrack({ players, totalPoints }) {
   if (!players.length) return <div style={{textAlign:'center',padding:24,color:'#94a3b8'}}>🦆 Waiting for players...</div>;
   
   return (
-    <div style={{ position: 'relative', width: '100%', height: 220, background: 'linear-gradient(180deg, #bae6fd, #38bdf8)', borderRadius: 16, border: '4px solid #7dd3fc', overflow: 'hidden', boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.1)' }}>
+    <div style={{ position: 'relative', width: '100%', height: 260, background: '#2563eb', borderRadius: 16, border: '4px solid #1e3a8a', overflow: 'hidden', boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.3)' }}>
+      {/* Grass Bank */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 24, background: '#16a34a', borderBottom: '2px solid #14532d' }}>
+        {/* Little grass tufts */}
+        <div style={{ position: 'absolute', left: 40, bottom: 2, fontSize: 12, color: '#15803d' }}>🌿</div>
+        <div style={{ position: 'absolute', left: 140, bottom: 2, fontSize: 12, color: '#15803d' }}>🌿</div>
+        <div style={{ position: 'absolute', right: 80, bottom: 2, fontSize: 12, color: '#15803d' }}>🌿</div>
+      </div>
+      {/* Dirt Bank */}
+      <div style={{ position: 'absolute', top: 24, left: 0, right: 0, height: 12, background: '#854d0e', borderBottom: '3px solid #713f12' }} />
+
       {/* Flowing Water Effect */}
       <div style={{
-        position: 'absolute', inset: 0,
-        background: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'30\' viewBox=\'0 0 60 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 15 Q 15 0, 30 15 T 60 15\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-opacity=\'0.3\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
-        animation: 'waterFlow 2s linear infinite',
-        opacity: 0.8
+        position: 'absolute', top: 39, left: 0, right: 0, bottom: 0,
+        background: 'url("data:image/svg+xml,%3Csvg width=\'120\' height=\'40\' viewBox=\'0 0 120 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 20 Q 30 0, 60 20 T 120 20\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'4\' stroke-opacity=\'0.15\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
+        animation: 'waterFlow 3s linear infinite'
       }} />
       
-      {/* Finish line */}
-      <div style={{ position: 'absolute', right: 20, top: 0, bottom: 0, width: 24, background: 'repeating-linear-gradient(45deg, #000, #000 12px, #fff 12px, #fff 24px)', opacity: 0.8 }} />
-      <div style={{ position: 'absolute', right: 54, top: '50%', transform: 'translateY(-50%)', fontSize: 32, opacity: 0.9 }}>🏁</div>
+      {/* Finish line (Slanted) */}
+      <div style={{ position: 'absolute', right: 60, top: 24, bottom: -20, width: 32, background: 'repeating-linear-gradient(0deg, #000, #000 16px, #fff 16px, #fff 32px)', opacity: 0.9, transform: 'skewX(-15deg)', borderLeft: '4px solid #1e293b', borderRight: '4px solid #1e293b', boxShadow: '-10px 0 20px rgba(0,0,0,0.3)' }} />
+      <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 36, filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.4))' }}>🏁</div>
       
       {/* Swarm of Ducks */}
       {players.map((p, index) => {
         const pct = totalPoints > 0 ? Math.min((p.score / totalPoints), 1) : 0;
-        // Distribute them vertically so they "stick together" but stagger nicely.
-        // Formula creates rows across the 220px height.
-        const yOffset = 15 + (index % 5) * 32 + (index % 3) * 8; 
-        const isLight = p.color === '#f8fafc' || p.color === '#fbbf24' || p.color === '#eab308';
+        // Formula creates rows across the 260px height (starting below the dirt bank).
+        const yOffset = 45 + (index % 5) * 36 + (index % 3) * 10; 
         
         return (
           <div key={p.id} style={{
             position: 'absolute',
-            left: `calc(10px + (100% - 90px) * ${pct})`,
+            left: `calc(10px + (100% - 130px) * ${pct})`,
             top: `${yOffset}px`,
-            transition: 'left 0.7s cubic-bezier(0.34,1.56,0.64,1)',
+            transition: 'left 0.8s cubic-bezier(0.34,1.56,0.64,1)',
             zIndex: 10 + Math.floor(pct),
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+            justifyContent: 'center',
+            filter: 'drop-shadow(0 6px 8px rgba(0,0,0,0.4))'
           }}>
-            <div style={{width: 38, height: 38, position: 'relative', borderRadius: '50%', background: p.color || '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 -2px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.4)'}}>
-              <span style={{ fontSize: 24, transform: 'scaleX(-1)', display: 'inline-block' }}>🦆</span>
+            {/* The Duck Emoji directly on water */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 56, transform: 'scaleX(-1)', display: 'inline-block' }}>🦆</span>
+              
+              {/* Accessory */}
               {p.accessory && p.accessory !== 'none' && (
-                <span style={{ position: 'absolute', top: -14, right: -4, fontSize: 22, transform: 'rotate(15deg)' }}>{p.accessory}</span>
+                <span style={{ position: 'absolute', top: -16, right: 6, fontSize: 32, transform: 'rotate(15deg) scaleX(-1)' }}>{p.accessory}</span>
               )}
+              
+              {/* White Pill Label (like the image) */}
+              <div style={{
+                position: 'absolute',
+                top: 24, right: 14,
+                background: 'white',
+                color: '#0f172a',
+                fontSize: 12,
+                fontWeight: 900,
+                padding: '2px 8px',
+                borderRadius: 12,
+                border: `2px solid ${p.color || '#2563eb'}`,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                whiteSpace: 'nowrap',
+                maxWidth: 60,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                textAlign: 'center',
+                zIndex: 2
+              }}>
+                {p.name}
+              </div>
             </div>
-            <span style={{
-              background: p.color || '#0f172a',
-              color: isLight ? '#0f172a' : 'white',
-              fontSize: 10,
-              fontWeight: 800,
-              padding: '2px 6px',
-              borderRadius: 4,
-              marginTop: -6,
-              whiteSpace: 'nowrap',
-              maxWidth: 90,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              border: '1px solid rgba(0,0,0,0.1)'
-            }}>
-              {p.name}
-            </span>
           </div>
         );
       })}
