@@ -44,22 +44,26 @@ function playTone(type) {
 
 function NavBar({ user, isAdmin, roomName, onBack }) {
   return (
-    <nav className="navbar">
-      <div className="navbar-inner">
-        <div className="navbar-brand">
-          <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, filter: 'brightness(0) invert(1)' }} />
-          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: 12, marginLeft: 4 }}>
-            <div className="navbar-title">{roomName || 'Game Room'}</div>
-            <div className="navbar-subtitle">{isAdmin ? 'Admin Host' : 'Player'}</div>
-          </div>
-        </div>
-        <div className="navbar-right">
-          <div className="avatar">{user.name?.[0]?.toUpperCase()}</div>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</span>
-          <button className="logout-btn" onClick={onBack}>← Back</button>
+    <header className="topbar-neo" style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, filter: 'brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.4))' }} />
+        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: 12, marginLeft: 4 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: 1 }}>{roomName || 'Game Room'}</div>
+          <div style={{ fontSize: 10, color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{isAdmin ? 'Admin Host' : 'Player'}</div>
         </div>
       </div>
-    </nav>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+            {user.name?.[0]?.toUpperCase()}
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 700, display: window.innerWidth < 600 ? 'none' : 'inline' }}>{user.name}</span>
+        </div>
+        <button style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }} onClick={onBack}>
+          <ArrowLeft size={14} /> Back
+        </button>
+      </div>
+    </header>
   );
 }
 
@@ -81,6 +85,7 @@ export default function GameRoom({ user }) {
   const [revealCountdown, setRevealCountdown] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showWinners, setShowWinners] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
   // Fullscreen toggle
   const toggleFullscreen = () => {
@@ -211,11 +216,16 @@ export default function GameRoom({ user }) {
   if (isAdmin) {
     const finished = room.status === 'finished';
     return (
-      <div className="core-bg-light" style={{ minHeight: '100vh' }}>
+      <div className="game-dash-bg core-bg-dark" style={{ minHeight: '100vh' }}>
+        <div className="dash-particles">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className="dash-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, animationDelay: `${Math.random() * 5}s`, animationDuration: `${Math.random() * 10 + 10}s` }} />
+          ))}
+        </div>
         <NavBar user={user} isAdmin roomName={room.name} onBack={() => navigate('/admin')} />
 
         {/* Sub-header */}
-        <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'sticky', top: 60, zIndex: 100 }}>
+        <div style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', position: 'sticky', top: 60, zIndex: 100, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button className="btn-ghost btn-icon" onClick={() => navigate('/admin')} style={{ color: '#64748b' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
@@ -242,26 +252,23 @@ export default function GameRoom({ user }) {
         </div>
 
         {/* Main game area — fullscreen target */}
-        <div ref={gameAreaRef} style={{ background: isFullscreen ? '#0f172a' : 'transparent', minHeight: isFullscreen ? '100vh' : 'auto' }}>
-          <div style={{ maxWidth: 1150, margin: '0 auto', padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 18 }}>
+        <div ref={gameAreaRef} style={{ background: isFullscreen ? '#0f172a' : 'transparent', minHeight: isFullscreen ? '100vh' : 'auto', display: 'flex', flexDirection: 'column' }}>
+          
+          {/* Top Half: Race Track (Full Width like Player POV) */}
+          <div style={{ height: '40vh', minHeight: 250, padding: '24px 24px 0', display: 'flex', flexDirection: 'column' }}>
+            <RaceTrack players={room.players ?? []} totalPoints={room.questions?.reduce((s, q) => s + (q.points || 10), 0) || 1} />
+          </div>
 
-            {/* Duck Race panel — full width top row */}
-            <div style={{ gridColumn: '1 / -1', background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(90deg,#0d0d5c,#3333aa)' }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>🏁 Duck Race</div>
-                {room.status === 'playing' && <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>🔴 LIVE</span>}
-              </div>
-              <div style={{ padding: '20px 24px', minHeight: 140 }}>
-                <RaceTrack players={room.players ?? []} totalPoints={room.questions?.reduce((s, q) => s + (q.points || 10), 0) || 1} />
-              </div>
-            </div>
+          {/* Bottom Half: Game Controls */}
+          <div className="game-controls-grid" style={{ maxWidth: 1150, margin: '0 auto', width: '100%', padding: '24px', flex: 1 }}>
 
             {/* Current Question panel — bottom left */}
-            <div style={{ background: 'white', border: `2px solid ${revealPhase ? '#16a34a' : '#bfdbfe'}`, borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-card" style={{ padding: 0, border: `2px solid ${revealPhase ? '#22c55e' : 'rgba(255,255,255,0.2)'}`, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {room.status === 'playing' && currentQ ? <>
-                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${revealPhase ? '#bbf7d0' : '#dbeafe'}`, background: revealPhase ? '#f0fdf4' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${revealPhase ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`, background: revealPhase ? 'rgba(34,197,94,0.1)' : 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>📋 Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
+                    <button className="btn btn-outline" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setEditingQuestion(currentQ)}>✏️ Edit</button>
                     <span style={{ background: '#eff6ff', color: '#3333aa', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
                       {currentQ.type === 'multiple' ? 'Multiple Choice' : currentQ.type === 'fillblank' ? 'Fill in Blank' : 'Enumeration'}
                     </span>
@@ -292,7 +299,7 @@ export default function GameRoom({ user }) {
             </div>
 
             {/* Leaderboard — bottom right */}
-            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '14px 20px', background: 'linear-gradient(90deg,#0d0d5c,#3333aa)' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>🏆 Leaderboard</div>
               </div>
@@ -306,23 +313,78 @@ export default function GameRoom({ user }) {
 
         {/* Winners Modal */}
         {showWinners && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <div style={{ background: 'white', borderRadius: 20, boxShadow: '0 32px 64px rgba(0,0,0,0.3)', width: '100%', maxWidth: 560, padding: 40, textAlign: 'center' }}>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: 560, padding: 40, textAlign: 'center', border: '1px solid rgba(255,255,255,0.15)' }}>
               <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
               <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4, background: 'linear-gradient(90deg,#f59e0b,#2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Game Over!</h2>
-              <p style={{ color: '#64748b', marginBottom: 28, fontSize: 14 }}>Congratulations to all participants!</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 28, fontSize: 14 }}>Congratulations to all participants!</p>
               <WinnersPodium players={room.players ?? []} />
-              <div style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 20px', textAlign: 'left', maxHeight: 200, overflowY: 'auto' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: '#64748b' }}>Full Rankings</div>
+              <div style={{ marginTop: 24, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: '14px 20px', textAlign: 'left', maxHeight: 200, overflowY: 'auto' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'rgba(255,255,255,0.5)' }}>Full Rankings</div>
                 {[...room.players].sort((a, b) => b.score - a.score).map((p, i) => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontSize: 14, width: 24, color: '#94a3b8' }}>#{i + 1}</span>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{p.name}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#2563eb' }}>{p.score} pts</span>
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: 14, width: 24, color: 'rgba(255,255,255,0.4)' }}>#{i + 1}</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'white' }}>{p.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#38bdf8' }}>{p.score} pts</span>
                   </div>
                 ))}
               </div>
               <button className="btn btn-primary" style={{ marginTop: 24, width: '100%', fontSize: 15 }} onClick={() => setShowWinners(false)}>Close</button>
+            </div>
+          </div>
+        )}
+        {/* Edit Modal */}
+        {editingQuestion && (
+          <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingQuestion(null)} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <div className="glass-card" style={{ maxWidth: 500, width: '100%', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>✏️ Edit Question</span>
+                <button onClick={() => setEditingQuestion(null)} style={{ background: 'transparent', border: 'none', fontSize: 20, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>✕</button>
+              </div>
+              <div style={{ color: 'white' }}>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'rgba(255,255,255,0.7)' }}>Question Text</label>
+                  <textarea rows={3} value={editingQuestion.text} onChange={e => setEditingQuestion(f => ({ ...f, text: e.target.value }))} style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontFamily: 'inherit', resize: 'vertical' }} />
+                </div>
+                {editingQuestion.type === 'multiple' && (
+                  <>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'rgba(255,255,255,0.7)' }}>Answer Options</label>
+                      {editingQuestion.options.map((opt, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                          <div style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{LETTERS[i]}</div>
+                          <input style={{ flex: 1, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} type="text" value={opt}
+                            onChange={e => { const ops = [...editingQuestion.options]; ops[i] = e.target.value; setEditingQuestion(f => ({ ...f, options: ops })); }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'rgba(255,255,255,0.7)' }}>Correct Answer</label>
+                      <select style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} value={editingQuestion.correctAnswerIndex}
+                        onChange={e => setEditingQuestion(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))}>
+                        {LETTERS.map((l, i) => <option key={i} value={i} style={{ color: 'black' }}>Option {l}</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
+                {editingQuestion.type !== 'multiple' && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'rgba(255,255,255,0.7)' }}>Correct Answer(s)</label>
+                    <input style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} type="text" placeholder="Separate multiple correct answers with commas" value={editingQuestion.options.join(', ')}
+                      onChange={e => setEditingQuestion(f => ({ ...f, options: e.target.value.split(',').map(s => s.trim()) }))} />
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+                <button className="btn btn-outline" onClick={() => setEditingQuestion(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={() => {
+                  const newQuestions = [...room.questions];
+                  const qIndex = newQuestions.findIndex(q => q.id === editingQuestion.id);
+                  if (qIndex !== -1) newQuestions[qIndex] = editingQuestion;
+                  socket.emit('updateRoomQuestions', { roomId, questions: newQuestions });
+                  setEditingQuestion(null);
+                }}>Save Changes</button>
+              </div>
             </div>
           </div>
         )}
@@ -335,7 +397,12 @@ export default function GameRoom({ user }) {
   const me = room.players?.find(p => p.id === socket.id);
 
   if (room.status === 'waiting') return (
-    <div className="core-bg-dark" style={{ minHeight: '100vh' }}>
+    <div className="game-dash-bg core-bg-dark" style={{ minHeight: '100vh' }}>
+      <div className="dash-particles">
+        {[...Array(15)].map((_, i) => (
+          <div key={i} className="dash-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, animationDelay: `${Math.random() * 5}s`, animationDuration: `${Math.random() * 10 + 10}s` }} />
+        ))}
+      </div>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center', padding: 32, color: 'white' }}>
         <div style={{ fontSize: 64, transform: 'scaleX(-1)' }}>🦆</div>
@@ -351,13 +418,18 @@ export default function GameRoom({ user }) {
     const sortedPlayers = [...(room.players || [])].sort((a, b) => b.score - a.score);
     const myRank = sortedPlayers.findIndex(p => p.id === socket.id) + 1;
     return (
-      <div className="core-bg-dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="game-dash-bg core-bg-dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="dash-particles">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className="dash-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, animationDelay: `${Math.random() * 5}s`, animationDuration: `${Math.random() * 10 + 10}s` }} />
+          ))}
+        </div>
         <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
           <FinishCameraView player={me} rank={myRank} />
           
-          <div style={{ width: '100%', background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginTop: 24, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12, color: '#0f172a', textAlign: 'center' }}>🏆 Final Rankings</div>
+          <div className="glass-card" style={{ width: '100%', padding: 20, marginTop: 24 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12, color: 'white', textAlign: 'center' }}>🏆 Final Rankings</div>
             <Leaderboard players={room.players ?? []} revealPhase={false} />
           </div>
           <button className="btn btn-primary" style={{ marginTop: 24, padding: '14px 32px', fontSize: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} onClick={() => navigate('/dashboard')}>Back to Lobby</button>
@@ -372,8 +444,18 @@ export default function GameRoom({ user }) {
   const pct = totalPoints > 0 ? Math.min((myScore / totalPoints) * 82, 82) : 0;
 
   return (
-    <div className="core-bg-dark" style={{ minHeight: '100vh' }}>
+    <div className="game-dash-bg core-bg-dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="dash-particles">
+        {[...Array(15)].map((_, i) => (
+          <div key={i} className="dash-particle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`, animationDelay: `${Math.random() * 5}s`, animationDuration: `${Math.random() * 10 + 10}s` }} />
+        ))}
+      </div>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
+
+      {/* Top Half: Race Track (Full Width like Admin POV) */}
+      <div style={{ height: '40vh', minHeight: 250, padding: '24px 24px 0', display: 'flex', flexDirection: 'column' }}>
+        <RaceTrack players={room.players ?? []} totalPoints={totalPoints} />
+      </div>
 
       {/* Feedback toast */}
       {answerResult && (
@@ -382,65 +464,46 @@ export default function GameRoom({ user }) {
         </div>
       )}
 
-      <div style={{ maxWidth: 680, margin: '24px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Mini race */}
-        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(90deg,#0f2d6b,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>🏁 Your Progress</span>
-            <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>🔴 LIVE</span>
-          </div>
-          <div style={{ padding: '14px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#2563eb', color: 'white', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{user.name[0]?.toUpperCase()}</div>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 15, fontWeight: 800, color: '#2563eb' }}>{myScore} pts</span>
-            </div>
-            <div style={{ height: 36, background: 'linear-gradient(90deg,#bae6fd,#38bdf8)', borderRadius: 99, position: 'relative', overflow: 'hidden', border: '2px solid #7dd3fc' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: 'rgba(255,255,255,0.25)', transition: 'width 0.7s ease' }} />
-              <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%) scaleX(-1)', left: `calc(${pct}% + 2px)`, fontSize: 20, transition: 'left 0.7s ease', display: 'inline-block' }}>🦆</span>
-              <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}>🏁</span>
-            </div>
-          </div>
-        </div>
+      <div style={{ maxWidth: 680, margin: '0 auto', width: '100%', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
 
         {/* Reveal phase — show correct answer */}
         {revealPhase && answerResult && (
-          <div style={{ border: `2px solid ${answerResult.correct ? '#16a34a' : '#dc2626'}`, borderRadius: 14, padding: 20, background: answerResult.correct ? '#f0fdf4' : '#fff1f2' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: answerResult.correct ? '#15803d' : '#b91c1c', marginBottom: 10 }}>
+          <div className="glass-card" style={{ border: `2px solid ${answerResult.correct ? '#22c55e' : '#ef4444'}`, padding: 20, background: answerResult.correct ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: answerResult.correct ? '#4ade80' : '#f87171', marginBottom: 10 }}>
               {answerResult.correct ? '✅ Correct! Well done!' : '❌ Wrong Answer'}
             </div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Correct Answer:</div>
-            <div style={{ fontSize: 15, fontWeight: 700, background: 'white', borderRadius: 8, padding: '10px 14px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6 }}>Correct Answer:</div>
+            <div style={{ fontSize: 15, fontWeight: 700, background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 14px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>
               {answerResult.question?.type === 'multiple' ? `${LETTERS[answerResult.correctAnswerIndex]}. ${answerResult.correctAnswerText}` : answerResult.correctAnswerText}
             </div>
-            {revealCountdown > 0 && <div style={{ marginTop: 10, fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>Next question in {revealCountdown}s...</div>}
+            {revealCountdown > 0 && <div style={{ marginTop: 10, fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Next question in {revealCountdown}s...</div>}
           </div>
         )}
 
         {/* Question card */}
         {!revealPhase && currentQ && (
-          <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
-                <span style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
+                <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#7dd3fc', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
                   {currentQ.type === 'multiple' ? 'Multiple Choice' : currentQ.type === 'fillblank' ? 'Fill in Blank' : 'Enumeration'}
                 </span>
               </div>
               <CircleTimer value={qTimeLeft} max={room.timePerQuestion || 30} />
             </div>
-            <div style={{ height: 3, background: '#e2e8f0' }}>
-              <div style={{ height: '100%', background: qTimeLeft <= 5 ? '#ef4444' : '#2563eb', width: `${(qTimeLeft / (room.timePerQuestion || 30)) * 100}%`, transition: 'width 1s linear' }} />
+            <div style={{ height: 3, background: 'rgba(255,255,255,0.1)' }}>
+              <div style={{ height: '100%', background: qTimeLeft <= 5 ? '#ef4444' : '#38bdf8', width: `${(qTimeLeft / (room.timePerQuestion || 30)) * 100}%`, transition: 'width 1s linear' }} />
             </div>
             <div style={{ padding: 20 }}>
               {currentQ.image && <img src={currentQ.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
-              <p style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.5, marginBottom: 20 }}>{currentQ.text}</p>
+              <p style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.5, marginBottom: 20, color: 'white' }}>{currentQ.text}</p>
               {currentQ.type === 'multiple' ? (
                 <div className="answer-grid">
                   {currentQ.options.map((opt, i) => (
                     <button key={i} onClick={() => submitAnswer(i, opt)} disabled={answered}
-                      style={{ width: '100%', padding: '16px 18px', background: 'white', border: '2px solid #e2e8f0', borderRadius: 12, textAlign: 'left', fontSize: 14, fontWeight: 500, cursor: answered ? 'default' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10, opacity: answered ? 0.7 : 1, transition: 'all 0.15s' }}>
-                      <span style={{ width: 30, height: 30, borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{LETTERS[i]}</span>
+                      style={{ width: '100%', padding: '16px 18px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'left', fontSize: 14, fontWeight: 500, cursor: answered ? 'default' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10, opacity: answered ? 0.7 : 1, transition: 'all 0.15s' }}>
+                      <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{LETTERS[i]}</span>
                       {opt}
                     </button>
                   ))}
@@ -448,13 +511,13 @@ export default function GameRoom({ user }) {
               ) : (
                 <form onSubmit={e => { e.preventDefault(); submitAnswer(0, openText); }}>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <input className="form-input" type="text" value={openText} onChange={e => setOpenText(e.target.value)}
+                    <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" value={openText} onChange={e => setOpenText(e.target.value)}
                       placeholder={currentQ.type === 'enumeration' ? 'Type answers separated by commas...' : 'Type your answer...'} disabled={answered} />
-                    <button type="submit" className="btn btn-primary" disabled={answered || !openText.trim()}>→</button>
+                    <button type="submit" className="btn-neon" disabled={answered || !openText.trim()}>→</button>
                   </div>
                 </form>
               )}
-              {answered && !revealPhase && <div style={{ textAlign: 'center', padding: '16px 0', color: '#94a3b8', fontSize: 13 }}>⏳ Waiting for other players...</div>}
+              {answered && !revealPhase && <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>⏳ Waiting for other players...</div>}
             </div>
           </div>
         )}

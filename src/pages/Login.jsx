@@ -96,28 +96,28 @@ export default function Login({ onLogin }) {
 
       {modalType && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div className="modal" style={{ maxWidth: 400 }}>
-            <div className="modal-header">
+          <div className="modal" style={{ maxWidth: 400, background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div className="modal-header" style={{ background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <span className="modal-title">{modalType === 'host' ? 'Host Login' : 'Guest Details'}</span>
-              <button className="modal-close" onClick={closeModal}>✕</button>
+              <button className="modal-close" onClick={closeModal} style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>✕</button>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div className="modal-body" style={{ overflowY: 'auto' }}>
                 {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
 
                 {modalType === 'host' ? (
                   <>
                     <div className="form-group">
-                      <label className="form-label">Username / Email</label>
-                      <input className="form-input" type="text" placeholder="Enter username or email"
+                      <label className="form-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Username / Email</label>
+                      <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" placeholder="Enter username or email"
                         value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required autoFocus />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Password</label>
+                      <label className="form-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Password</label>
                       <div className="input-wrapper">
-                        <input className="form-input" type={showPw ? 'text' : 'password'} placeholder="Enter password"
+                        <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type={showPw ? 'text' : 'password'} placeholder="Enter password"
                           value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
-                        <button type="button" className="input-icon-btn" onClick={() => setShowPw(!showPw)} tabIndex={-1}>
+                        <button type="button" className="input-icon-btn" style={{ color: 'rgba(255,255,255,0.5)' }} onClick={() => setShowPw(!showPw)} tabIndex={-1}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             {showPw ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
                           </svg>
@@ -128,20 +128,20 @@ export default function Login({ onLogin }) {
                 ) : (
                   <>
                     <div className="form-group">
-                      <label className="form-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
-                      <input className="form-input" type="text" placeholder="Your full name"
+                      <label className="form-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Full Name <span style={{ color: '#f87171' }}>*</span></label>
+                      <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" placeholder="Your full name"
                         value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Company Name <span style={{ color: 'var(--text-light)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                      <input className="form-input" type="text" placeholder="Your company name"
+                      <label className="form-label" style={{ color: 'rgba(255,255,255,0.7)' }}>Company Name <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                      <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" placeholder="Your company name"
                         value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} />
                     </div>
                   </>
                 )}
               </div>
-              <div className="modal-footer">
-                <button type="submit" className="btn btn-primary-full" disabled={loading}>
+              <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <button type="submit" className="btn-neon" style={{ width: '100%' }} disabled={loading}>
                   {loading ? 'Processing…' : (modalType === 'host' ? 'Login' : 'Join Game')}
                 </button>
               </div>

@@ -144,20 +144,20 @@ export function QuestionDisplay({ question, idx, total, revealPhase, revealData 
   const correctIdx = revealPhase ? (revealData?.correctAnswerIndex ?? question.correctAnswerIndex) : -1;
   return <div>
     {question.image && <img src={question.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
-    <p style={{fontSize:18,fontWeight:700,lineHeight:1.5,marginBottom:16,color:'#0f172a'}}>{question.text}</p>
+    <p style={{fontSize:18,fontWeight:700,lineHeight:1.5,marginBottom:16,color:'white'}}>{question.text}</p>
     {question.type==='multiple'&&<div className="answer-grid" style={{marginTop: 0}}>
       {question.options.map((opt,i)=>{
-        let bg='#f8fafc',border='#e2e8f0',color='#0f172a';
-        if(revealPhase){bg=i===correctIdx?'#dcfce7':'#fee2e2';border=i===correctIdx?'#16a34a':'#fca5a5';color=i===correctIdx?'#15803d':'#b91c1c';}
+        let bg='rgba(0,0,0,0.2)',border='rgba(255,255,255,0.1)',color='white';
+        if(revealPhase){bg=i===correctIdx?'rgba(34,197,94,0.2)':'rgba(239,68,68,0.2)';border=i===correctIdx?'#22c55e':'#ef4444';color=i===correctIdx?'#4ade80':'#fca5a5';}
         return <div key={i} style={{padding:'10px 14px',borderRadius:10,fontSize:14,fontWeight:500,display:'flex',alignItems:'center',gap:10,background:bg,border:`2px solid ${border}`,color,transition:'all 0.4s'}}>
           <span style={{width:28,height:28,borderRadius:'50%',background:i===correctIdx&&revealPhase?'#16a34a':'#eff6ff',color:i===correctIdx&&revealPhase?'white':'#2563eb',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{L[i]}</span>
           {opt}{i===correctIdx&&revealPhase&&<span style={{marginLeft:'auto'}}>✓</span>}
         </div>;
       })}
     </div>}
-    {question.type!=='multiple'&&revealPhase&&<div style={{background:'#dcfce7',border:'2px solid #16a34a',borderRadius:10,padding:'10px 16px',marginTop:8}}>
-      <div style={{fontSize:11,fontWeight:700,color:'#15803d',marginBottom:4}}>CORRECT ANSWER</div>
-      <div style={{fontSize:16,fontWeight:700}}>{revealData?.correctAnswerText}</div>
+    {question.type!=='multiple'&&revealPhase&&<div style={{background:'rgba(34,197,94,0.2)',border:'2px solid #22c55e',borderRadius:10,padding:'10px 16px',marginTop:8}}>
+      <div style={{fontSize:11,fontWeight:700,color:'#4ade80',marginBottom:4}}>CORRECT ANSWER</div>
+      <div style={{fontSize:16,fontWeight:700,color:'white'}}>{revealData?.correctAnswerText}</div>
     </div>}
   </div>;
 }

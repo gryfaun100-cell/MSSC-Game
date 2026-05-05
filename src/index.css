@@ -51,6 +51,23 @@ body {
   min-height: 100vh;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 5px;
+  border: 2px solid rgba(15, 23, 42, 0.8);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
+}
+
 .core-bg-light {
   background: 
     linear-gradient(rgba(240, 240, 248, 0.75), rgba(240, 240, 248, 0.85)),
@@ -1856,4 +1873,214 @@ body {
     align-items: flex-end;
     padding: 0;
   }
+}
+
+/* --- Gaming Dashboard Styles --- */
+.game-dash-bg {
+  min-height: 100vh;
+  /* Keep the wallpaper image by using the existing core-bg-dark class alongside this one */
+  position: relative;
+  overflow-x: hidden;
+  color: #fff;
+}
+
+.game-dash-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dash-particles {
+  position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none;
+}
+.dash-particle {
+  position: absolute; background: #fff; border-radius: 50%; opacity: 0.1;
+  animation: floatParticle 10s linear infinite;
+}
+@keyframes floatParticle {
+  0% { transform: translateY(0) scale(1); opacity: 0.1; }
+  50% { transform: translateY(-100px) scale(1.5); opacity: 0.3; }
+  100% { transform: translateY(-200px) scale(1); opacity: 0; }
+}
+
+.game-sidebar {
+  width: 260px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+}
+
+.game-main {
+  margin-left: 0;
+  min-height: 100vh;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-main-content {
+  padding: 32px 40px;
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+}
+
+.stat-glow {
+  position: absolute; top: -50px; right: -50px; width: 120px; height: 120px;
+  filter: blur(40px); border-radius: 50%; z-index: 0; pointer-events: none;
+  opacity: 0.6; transition: all 0.3s ease;
+}
+.glass-card:hover .stat-glow {
+  transform: scale(1.2); opacity: 0.8;
+}
+
+.room-card-neo {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.room-card-neo:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(56, 189, 248, 0.25);
+}
+
+.room-card-neo::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 4px; height: 100%;
+  background: linear-gradient(180deg, #38bdf8, #818cf8);
+  opacity: 0.7;
+}
+
+.btn-neon {
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  color: white; border: none; padding: 12px 28px; border-radius: 12px;
+  font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-neon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.6);
+  filter: brightness(1.1);
+}
+
+.fab-neon {
+  position: fixed; bottom: 40px; right: 40px;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; cursor: pointer; border: none; z-index: 100;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+  animation: pulse-fab 2s infinite;
+  transition: transform 0.2s ease;
+}
+.fab-neon:hover { transform: scale(1.1); }
+
+@keyframes pulse-fab {
+  0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); }
+  70% { box-shadow: 0 0 0 20px rgba(14, 165, 233, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+
+.empty-animate {
+  animation: bounceFloat 3s ease-in-out infinite;
+}
+
+.nav-link {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px; border-radius: 12px; color: rgba(255,255,255,0.5);
+  text-decoration: none; font-weight: 600; margin-bottom: 6px;
+  transition: all 0.2s ease; cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.05); color: rgba(255,255,255,0.8);
+}
+.nav-link.active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), transparent);
+  color: #fff;
+  border-left: 3px solid #818cf8;
+  border-radius: 0 12px 12px 0;
+}
+
+.topbar-neo {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+
+@media (max-width: 1024px) {
+  .game-main-content { padding: 24px; }
+  .topbar-neo { padding: 16px 24px; }
+}
+
+.game-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .topbar-neo { flex-direction: column; padding: 12px; gap: 12px; }
+  .topbar-neo nav { order: 3; width: 100%; justify-content: center; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+  .topbar-neo > div:last-child { align-self: flex-end; position: absolute; top: 12px; right: 12px; }
+  .game-main-content { padding: 16px; }
+  .room-card-neo { padding: 16px; }
+  .glass-card { padding: 16px; }
+  .game-controls-grid { grid-template-columns: 1fr; }
+  .answer-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 600px) {
+  .topbar-neo nav .nav-link { padding: 6px 10px; font-size: 13px; }
 }

@@ -185,12 +185,16 @@ io.on('connection', (socket) => {
       if (existing) {
         existing.id = socket.id;
         socket.emit('roomStateUpdate', room);
-      } else if (room.status === 'waiting') {
+      } else if (room.status === 'waiting' || room.status === 'playing') {
         room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room), accessory: player.accessory || 'none' });
         io.to(roomId).emit('roomStateUpdate', room);
         io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+        if (room.status === 'playing') {
+          socket.emit('gameStarted', room);
+          socket.emit('nextQuestion', { room, questionIndex: room.currentQuestionIndex });
+        }
       } else {
-        socket.emit('error', { message: 'Game already started.' });
+        socket.emit('error', { message: 'Game already finished.' });
       }
     }
   });

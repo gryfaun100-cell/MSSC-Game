@@ -8,57 +8,18 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 
 function ConfirmModal({ title, message, confirmText, confirmColor, onConfirm, onClose }) {
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 360, padding: 24, textAlign: 'center' }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>{title}</h3>
-        <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>{message}</p>
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div className="modal" style={{ maxWidth: 360, padding: 32, textAlign: 'center', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+        <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: '#fff' }}>{title}</h3>
+        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28, lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
-          <button className="btn" style={{ flex: 1, background: confirmColor, color: '#fff', border: 'none' }} onClick={onConfirm}>
+          <button style={{ flex: 1, padding: 12, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }} onClick={onClose}>Cancel</button>
+          <button style={{ flex: 1, padding: 12, background: confirmColor, color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }} onClick={onConfirm}>
             {confirmText}
           </button>
         </div>
       </div>
     </div>
-  );
-}
-
-function NavBar({ user, onLogout }) {
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  return (
-    <>
-      <nav className="navbar">
-        <div className="navbar-inner">
-          <div className="navbar-brand">
-            <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, width: 'auto', filter: 'brightness(0) invert(1)' }} />
-            <div style={{ borderLeft: '1px solid var(--border)', paddingLeft: 12, marginLeft: 4 }}>
-              <div className="navbar-title">Game System</div>
-              <div className="navbar-subtitle">Admin Host</div>
-            </div>
-          </div>
-          <div className="navbar-right">
-            <div className="user-badge">
-              <div className="avatar">{user.name?.[0]?.toUpperCase()}</div>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</span>
-            </div>
-            <button className="logout-btn" onClick={() => setShowLogoutModal(true)}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-      {showLogoutModal && (
-        <ConfirmModal
-          title="Log Out"
-          message="Are you sure you want to log out?"
-          confirmText="Log Out"
-          confirmColor="var(--danger)"
-          onConfirm={onLogout}
-          onClose={() => setShowLogoutModal(false)}
-        />
-      )}
-    </>
   );
 }
 
@@ -71,50 +32,38 @@ function CreateRoomModal({ onClose, onCreated }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    if (!roomName.trim()) {
-      setError("Please enter a room name.");
-      return;
-    }
+    if (!roomName.trim()) { setError("Please enter a room name."); return; }
     const t = parseInt(timePerQ, 10);
-    if (isNaN(t) || t < 5) {
-      setError("Timer must be at least 5 seconds.");
-      return;
-    }
-    if (!socket.connected) {
-      setError("Cannot connect to server. Is the backend running?");
-      return;
-    }
+    if (isNaN(t) || t < 5) { setError("Timer must be at least 5 seconds."); return; }
+    if (!socket.connected) { setError("Cannot connect to server. Is the backend running?"); return; }
 
     setLoading(true);
     onCreated({ roomName, timePerQuestion: t });
-
-    setTimeout(() => {
-      setLoading(false);
-    }, 5000);
+    setTimeout(() => setLoading(false), 5000);
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => !loading && e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 460 }}>
-        <div className="modal-header">
-          <span className="modal-title">🎮 Create Game Room</span>
-          {!loading && <button className="modal-close" onClick={onClose}>✕</button>}
+    <div className="modal-overlay" onClick={(e) => !loading && e.target === e.currentTarget && onClose()} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div className="modal" style={{ maxWidth: 460, width: '100%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>🎮 Create Game Room</span>
+          {!loading && <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 20, cursor: 'pointer' }} onClick={onClose}>✕</button>}
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, marginBottom: 16 }}>⚠️ {error}</div>}
-            <div className="form-group">
-              <label className="form-label">Room Name</label>
-              <input className="form-input" type="text" placeholder="e.g. Training Quiz Round 1" value={roomName} onChange={(e) => setRoomName(e.target.value)} autoFocus disabled={loading} />
+        <form onSubmit={handleSubmit} style={{ overflowY: 'auto' }}>
+          <div style={{ padding: '32px' }}>
+            {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '12px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600, marginBottom: 20 }}>⚠️ {error}</div>}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Room Name</label>
+              <input style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 15, outline: 'none' }} type="text" placeholder="e.g. Training Quiz Round 1" value={roomName} onChange={(e) => setRoomName(e.target.value)} autoFocus disabled={loading} />
             </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Time per Question (seconds)</label>
-              <input className="form-input" type="number" min={5} max={120} value={timePerQ} onChange={(e) => setTimePerQ(e.target.value)} disabled={loading} />
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Time per Question (seconds)</label>
+              <input style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 15, outline: 'none' }} type="number" min={5} max={120} value={timePerQ} onChange={(e) => setTimePerQ(e.target.value)} disabled={loading} />
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+          <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <button type="button" style={{ padding: '12px 24px', background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, fontWeight: 600, cursor: 'pointer' }} onClick={onClose} disabled={loading}>Cancel</button>
+            <button type="submit" className="btn-neon" disabled={loading}>
               {loading ? 'Creating...' : 'Create Room'}
             </button>
           </div>
@@ -133,13 +82,15 @@ export default function AdminDashboard({ user, onLogout }) {
   const [expandedRoom, setExpandedRoom] = useState(null);
   const [viewReview, setViewReview] = useState(false);
   const [questions, setQuestions] = useState([]);
-  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: null });
+  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' });
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const totalPlayers = rooms.reduce((s, r) => s + r.playerCount, 0);
   const activeGames = rooms.filter(r => r.status === 'playing').length;
 
   useEffect(() => {
-    fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms);
+    fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms).catch(console.error);
 
     const onRoomsUpdated = (newRooms) => setRooms(newRooms);
     const onRoomCreated = (room) => {
@@ -162,10 +113,19 @@ export default function AdminDashboard({ user, onLogout }) {
 
   const addQuestion = () => {
     if (!qForm.text.trim()) return alert('Enter a question.');
-    if (qForm.type === 'multiple' && qForm.options.some(o => !o.trim())) return alert('Fill all answer options.');
-    const newQuestions = [...questions, { ...qForm, id: Date.now() }];
+    if (qForm.type === 'multiple' && qForm.options.some(o => typeof o !== 'string' || !o.trim())) return alert('Fill all answer options.');
+    if (qForm.type !== 'multiple' && (!qForm.options[0] || typeof qForm.options[0] !== 'string' || !qForm.options[0].trim())) return alert('Provide at least one correct answer.');
+    
+    let newQuestions;
+    if (editingQuestionId) {
+      newQuestions = questions.map(q => q.id === editingQuestionId ? { ...qForm, id: q.id } : q);
+    } else {
+      newQuestions = [...questions, { ...qForm, id: Date.now() }];
+    }
+    
     setQuestions(newQuestions);
-    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: null });
+    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' });
+    setEditingQuestionId(null);
     if (expandedRoom) socket.emit('updateRoomQuestions', { roomId: expandedRoom, questions: newQuestions });
   };
 
@@ -182,229 +142,286 @@ export default function AdminDashboard({ user, onLogout }) {
     navigate(`/room/${roomId}`);
   };
 
-  const getBadge = (status) => {
-    if (status === 'waiting') return <span className="badge badge-waiting">Waiting</span>;
-    if (status === 'playing') return <span className="badge badge-playing">Live</span>;
-    return <span className="badge badge-finished">Finished</span>;
-  };
-
   return (
-    <div className="core-bg-light" style={{ minHeight: '100vh' }}>
-      <NavBar user={user} onLogout={onLogout} />
+    <div className="game-dash-bg core-bg-dark">
+      <div className="dash-particles">
+        {[...Array(15)].map((_, i) => (
+          <div key={i} className="dash-particle" style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: `${Math.random() * 6 + 2}px`,
+            height: `${Math.random() * 6 + 2}px`,
+            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${Math.random() * 10 + 10}s`
+          }} />
+        ))}
+      </div>
 
-      <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-
-        {/* Stats Row */}
-        <div className="stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
-          {[
-            { label: 'Total Rooms', value: rooms.length, color: 'var(--primary)' },
-            { label: 'Active Games', value: activeGames, color: 'var(--success)' },
-            { label: 'Total Players', value: totalPlayers, color: 'var(--warning)' },
-            { label: 'Questions', value: questions.length, color: 'var(--purple)' },
-          ].map(s => (
-            <div key={s.label} className="card" style={{ padding: '20px 24px' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{s.label}</div>
+      {/* Main Content */}
+      <main className="game-main" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <header className="topbar-neo" style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, filter: 'brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.4))' }} />
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: 12, marginLeft: 4 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: 1 }}>MSSC RACE</div>
+              <div style={{ fontSize: 10, color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Control Center</div>
             </div>
-          ))}
-        </div>
+          </div>
+          
+          <nav style={{ display: 'flex', gap: 16 }}>
+            <div className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} style={{ padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }} onClick={() => setActiveTab('dashboard')}>
+              Dashboard
+            </div>
+            <div className={`nav-link ${activeTab === 'rooms' ? 'active' : ''}`} style={{ padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }} onClick={() => setActiveTab('rooms')}>
+              Game Rooms
+            </div>
+            <div className={`nav-link ${activeTab === 'players' ? 'active' : ''}`} style={{ padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }} onClick={() => setActiveTab('players')}>
+              Players
+            </div>
+          </nav>
 
-        {/* Game Rooms */}
-        <div className="section-header" style={{ marginBottom: 20 }}>
-          <h2 className="section-title">Game Rooms</h2>
-          <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowModal(true)}>
-            <Plus size={16} /> Create Room
-          </button>
-        </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+                {user.name?.[0]?.toUpperCase()}
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, display: window.innerWidth < 600 ? 'none' : 'inline' }}>{user.name}</span>
+            </div>
+            <button style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }} onClick={onLogout}>
+              Logout
+            </button>
+          </div>
+        </header>
 
-        <div className="room-list">
-          {rooms.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-state-icon">🎮</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>No rooms yet</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Create a room to get started</div>
+        <div className="game-main-content">
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Stats Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 40 }}>
+                {[
+                  { label: 'Total Rooms', value: rooms.length, color: '#38bdf8', icon: '🎮' },
+                  { label: 'Active Games', value: activeGames, color: '#22c55e', icon: '🔴' },
+                  { label: 'Total Players', value: totalPlayers, color: '#f59e0b', icon: '👥' },
+                  { label: 'Questions', value: questions.reduce((s, r) => s + (r.questions?.length || 0), 0) || questions.length, color: '#a855f7', icon: '❓' },
+                ].map((s, i) => (
+                  <div key={i} className="glass-card">
+                    <div className="stat-glow" style={{ background: s.color }} />
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{s.label}</div>
+                        <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', textShadow: `0 0 20px ${s.color}80` }}>{s.value}</div>
+                      </div>
+                      <div style={{ fontSize: 48, opacity: 0.8, filter: `drop-shadow(0 0 10px ${s.color})` }}>{s.icon}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Game Rooms List */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800 }}>Active & Recent Rooms</h2>
+              </div>
+              
+              {rooms.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(15,23,42,0.4)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                  <div className="empty-animate" style={{ fontSize: 80, marginBottom: 20, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}>🦆</div>
+                  <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>No Game Rooms Yet!</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 24, maxWidth: 400, margin: '0 auto 24px' }}>Create your first room, add some exciting questions, and invite players to start the duck race!</p>
+                  <button className="btn-neon" onClick={() => setShowModal(true)}>
+                    <Plus size={18} strokeWidth={3} /> Create First Room
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
+                  {rooms.map(room => (
+                    <div key={room.id} className="room-card-neo">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                        <div>
+                          <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{room.name}</h3>
+                          <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>👥 {room.playerCount}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>❓ {room.questionCount ?? questions.length}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>⏱ {room.timePerQuestion ?? 30}s</span>
+                          </div>
+                        </div>
+                        {room.status === 'playing' ? (
+                          <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 800, border: '1px solid rgba(239, 68, 68, 0.3)', animation: 'pulse-fab 2s infinite' }}>🔴 LIVE</span>
+                        ) : room.status === 'finished' ? (
+                          <span style={{ background: 'rgba(148, 163, 184, 0.2)', color: '#cbd5e1', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 800 }}>FINISHED</span>
+                        ) : (
+                          <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#7dd3fc', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 800, border: '1px solid rgba(56, 189, 248, 0.3)' }}>WAITING</span>
+                        )}
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+                        {room.status === 'waiting' && (
+                          <>
+                            <button style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='rgba(255,255,255,0.15)'} onMouseOut={e => e.target.style.background='rgba(255,255,255,0.1)'} onClick={() => {
+                              if (expandedRoom === room.id && !viewReview) { setExpandedRoom(null); }
+                              else { setExpandedRoom(room.id); setViewReview(false); fetch(`${API_URL}/api/rooms/${room.id}`).then(r => r.json()).then(d => setQuestions(d.questions || [])); }
+                            }}>❓ Edit Qs</button>
+                            <button style={{ flex: 1, padding: '10px', background: '#22c55e', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(34,197,94,0.4)', transition: 'all 0.2s' }} onMouseOver={e => e.target.style.transform='translateY(-2px)'} onMouseOut={e => e.target.style.transform='translateY(0)'} onClick={() => handleStartRoom(room.id)}>
+                              ▶ Start
+                            </button>
+                          </>
+                        )}
+                        {(room.status === 'playing' || room.status === 'finished') && (
+                          <button style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }} onClick={() => navigate(`/room/${room.id}`)}>
+                            {room.status === 'playing' ? '👁 Spectate' : '📊 View Results'}
+                          </button>
+                        )}
+                        {room.status === 'finished' && (
+                          <button style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, color: '#fff', cursor: 'pointer' }} onClick={() => setReplayRoomId(room.id)}>🔄</button>
+                        )}
+                        <button style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239, 68, 68, 0.1)', border: 'none', borderRadius: 10, color: '#ef4444', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='rgba(239, 68, 68, 0.2)'} onMouseOut={e => e.target.style.background='rgba(239, 68, 68, 0.1)'} onClick={() => setDeleteRoomId(room.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'rooms' && (
+            <div className="glass-card">
+              <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Manage All Game Rooms</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)' }}>View is synced with Dashboard Overview.</p>
+              <button className="btn-neon" style={{ marginTop: 16 }} onClick={() => { setActiveTab('dashboard'); setShowModal(true); }}>
+                Create New Room
+              </button>
             </div>
           )}
 
-          {rooms.map(room => (
-            <div key={room.id}>
-              <div className="room-card">
-                <div className="room-info">
-                  <div className="room-name">{room.name} {getBadge(room.status)}</div>
-                  <div className="room-meta">
-                    <span>👤 {room.playerCount} players</span>
-                    <span>❓ {room.questionCount ?? questions.length} Qs</span>
-                    <span>⏱ {room.timePerQuestion ?? 30}s</span>
-                  </div>
-                </div>
-                <div className="room-actions">
-                  {room.status === 'waiting' && (
-                    <>
-                      <button className="btn btn-outline btn-sm"
-                        onClick={() => {
-                          if (expandedRoom === room.id && !viewReview) { setExpandedRoom(null); }
-                          else { setExpandedRoom(room.id); setViewReview(false); fetch(`${API_URL}/api/rooms/${room.id}`).then(r => r.json()).then(d => setQuestions(d.questions || [])); }
-                        }}>❓ Questions</button>
-                      {room.playerCount === 0 ? (
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, padding: '0 8px' }}>Waiting for players...</span>
-                      ) : (
-                        <button className="btn btn-success btn-sm" onClick={() => handleStartRoom(room.id)}>▶ Start</button>
-                      )}
-                    </>
-                  )}
-                  {room.status === 'playing' && (
-                    <button className="btn btn-primary btn-sm" onClick={() => navigate(`/room/${room.id}`)}>👁 View Race</button>
-                  )}
-                  {room.status === 'finished' && (
-                    <>
-                      <button className="btn btn-primary btn-sm" onClick={() => navigate(`/room/${room.id}`)}>📊 Game Summary</button>
-                      <button className="btn btn-success btn-sm" onClick={() => setReplayRoomId(room.id)}>🔄 Replay</button>
-                      <button className="btn btn-outline btn-sm" onClick={() => {
-                        if (expandedRoom === room.id && viewReview) { setExpandedRoom(null); setViewReview(false); }
-                        else { setExpandedRoom(room.id); setViewReview(true); fetch(`${API_URL}/api/rooms/${room.id}`).then(r => r.json()).then(d => setQuestions(d.questions || [])); }
-                      }}>👀 Review Questions</button>
-                    </>
-                  )}
-                  <button className="btn btn-danger btn-sm" onClick={() => setDeleteRoomId(room.id)}>
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
-              </div>
-
-              {expandedRoom === room.id && !viewReview && (
-                <div className="card" style={{ borderTop: '3px solid var(--primary)', borderRadius: '0 0 12px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, padding: 24 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: 'var(--text)' }}>➕ Add Question</div>
-                    <div className="tab-group" style={{ marginBottom: 16 }}>
-                      {[['multiple', 'Multiple Choice'], ['fillblank', 'Fill in the Blank'], ['enumeration', 'Enumeration']].map(([t, label]) => (
-                        <button key={t} className={`tab-btn${qForm.type === t ? ' active' : ''}`} onClick={() => setQForm(f => ({ ...f, type: t }))}>{label}</button>
-                      ))}
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Question</label>
-                      <textarea className="form-input" rows={3} placeholder="Enter your question..." value={qForm.text}
-                        onChange={e => setQForm(f => ({ ...f, text: e.target.value }))} style={{ resize: 'vertical', fontFamily: 'inherit' }} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Image (Optional)</label>
-                      <input className="form-input" type="file" accept="image/png, image/jpeg, image/jpg, image/gif" onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = ev => setQForm(f => ({ ...f, image: ev.target.result }));
-                          reader.readAsDataURL(file);
-                        } else {
-                          setQForm(f => ({ ...f, image: null }));
-                        }
-                      }} />
-                      {qForm.image && <img src={qForm.image} alt="Preview" style={{ marginTop: 10, maxWidth: '100%', maxHeight: 150, borderRadius: 8, objectFit: 'contain' }} />}
-                    </div>
-                    {qForm.type === 'multiple' && (
-                      <>
-                        <div className="form-group">
-                          <label className="form-label">Answer Options</label>
-                          {qForm.options.map((opt, i) => (
-                            <div key={i} className="option-row">
-                              <div className="option-letter">{LETTERS[i]}</div>
-                              <input className="form-input" type="text" placeholder={`Option ${LETTERS[i]}`} value={opt}
-                                onChange={e => { const ops = [...qForm.options]; ops[i] = e.target.value; setQForm(f => ({ ...f, options: ops })); }} />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Correct Answer</label>
-                          <select className="form-input" value={qForm.correctAnswerIndex}
-                            onChange={e => setQForm(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))}>
-                            {LETTERS.map((l, i) => <option key={i} value={i}>Option {l}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    )}
-                    {qForm.type !== 'multiple' && (
-                      <div className="form-group">
-                        <label className="form-label">Correct Answer</label>
-                        <input className="form-input" type="text"
-                          placeholder={qForm.type === 'enumeration' ? 'e.g. apple, banana, cherry' : 'Correct answer'}
-                          value={qForm.options[0]}
-                          onChange={e => { const ops = [...qForm.options]; ops[0] = e.target.value; setQForm(f => ({ ...f, options: ops, correctAnswerIndex: 0 })); }} />
-                      </div>
-                    )}
-                    <div className="form-group">
-                      <label className="form-label">Points</label>
-                      <input className="form-input" type="number" min={1} value={qForm.points}
-                        onChange={e => setQForm(f => ({ ...f, points: Number(e.target.value) }))} />
-                    </div>
-                    <button className="btn btn-primary" style={{ width: '100%', padding: '12px 16px' }} onClick={addQuestion}>➕ Add Question</button>
-                  </div>
-
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: 'var(--text)' }}>Questions ({questions.length})</div>
-                    {questions.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>No questions yet</div>
-                    ) : questions.map((q, idx) => (
-                      <div key={q.id} className="question-item">
-                        <span className="q-num">{idx + 1}.</span>
-                        <div style={{ flex: 1 }}>
-                          <div className="q-text">{q.text}</div>
-                          {q.image && <div style={{ fontSize: 11, color: 'var(--primary)', marginTop: 2 }}>🖼️ Includes image</div>}
-                          <div className="q-sub">{q.type === 'multiple' ? `Answer: ${LETTERS[q.correctAnswerIndex]} • 4 options` : `Answer: ${q.options[0]}`} • {q.points || 10} pts</div>
-                        </div>
-                        <button onClick={() => removeQuestion(q.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 4 }}>🗑</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {expandedRoom === room.id && viewReview && (
-                <div className="card" style={{ borderTop: '3px solid var(--primary)', borderRadius: '0 0 12px 12px', padding: 24 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16, color: 'var(--text)' }}>Review Questions</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-                    {questions.length === 0 ? (
-                      <div style={{ color: 'var(--text-muted)' }}>No questions found.</div>
-                    ) : questions.map((q, idx) => (
-                      <div key={q.id} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 16, background: 'var(--bg-white)' }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-muted)', marginBottom: 8 }}>Question {idx + 1}</div>
-                        {q.image && <img src={q.image} alt="Q" style={{ maxWidth: '100%', maxHeight: 120, borderRadius: 6, marginBottom: 8, objectFit: 'contain' }} />}
-                        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>{q.text}</div>
-                        <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', color: 'var(--success)', padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
-                          ✓ Answer: {q.type === 'multiple' ? `${LETTERS[q.correctAnswerIndex]}. ${q.options[q.correctAnswerIndex]}` : q.options[0]}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {activeTab === 'players' && (
+            <div className="glass-card">
+              <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Player Analytics</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)' }}>Advanced analytics and player management coming soon.</p>
             </div>
-          ))}
+          )}
         </div>
-      </div>
+      </main>
+
+      <button className="fab-neon" onClick={() => setShowModal(true)} title="Create Room">
+        <Plus size={28} strokeWidth={3} />
+      </button>
 
       {showModal && <CreateRoomModal onClose={() => setShowModal(false)} onCreated={handleCreateRoom} />}
+      
       {deleteRoomId && (
-        <ConfirmModal
-          title="Delete Room"
-          message="Are you sure you want to delete this room? This action cannot be undone."
-          confirmText="Delete"
-          confirmColor="#dc2626"
-          onConfirm={() => { socket.emit('deleteRoom', deleteRoomId); setDeleteRoomId(null); }}
-          onClose={() => setDeleteRoomId(null)}
-        />
+        <ConfirmModal title="Delete Room" message="Are you sure you want to delete this room? This action cannot be undone." confirmText="Delete" confirmColor="#ef4444" onConfirm={() => { socket.emit('deleteRoom', deleteRoomId); setDeleteRoomId(null); }} onClose={() => setDeleteRoomId(null)} />
       )}
       {replayRoomId && (
-        <div className="modal-overlay" onClick={() => setReplayRoomId(null)}>
-          <div className="modal" style={{ maxWidth: 420, padding: 24, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🔄</div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Replay Game</h3>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>Reset the game state and play again. You can keep the existing players or start a fresh session.</p>
+        <div className="modal-overlay" onClick={() => setReplayRoomId(null)} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal" style={{ maxWidth: 420, padding: 24, textAlign: 'center', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔄</div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: 'white' }}>Replay Game</h3>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 24 }}>Reset the game state and play again. You can keep the existing players or start a fresh session.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button className="btn btn-success" onClick={() => { socket.emit('replayRoom', { roomId: replayRoomId, keepPlayers: true }); navigate(`/room/${replayRoomId}`); setReplayRoomId(null); }}>
+              <button style={{ padding: 14, background: '#22c55e', color: 'white', fontWeight: 700, borderRadius: 12, border: 'none', cursor: 'pointer' }} onClick={() => { socket.emit('replayRoom', { roomId: replayRoomId, keepPlayers: true }); navigate(`/room/${replayRoomId}`); setReplayRoomId(null); }}>
                 ▶ Replay with same players
               </button>
-              <button className="btn btn-outline" onClick={() => { socket.emit('replayRoom', { roomId: replayRoomId, keepPlayers: false }); setReplayRoomId(null); }}>
+              <button style={{ padding: 14, background: 'rgba(255,255,255,0.1)', color: 'white', fontWeight: 600, borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }} onClick={() => { socket.emit('replayRoom', { roomId: replayRoomId, keepPlayers: false }); setReplayRoomId(null); }}>
                 👥 Start new session (Clear players)
               </button>
-              <button className="btn btn-ghost" onClick={() => setReplayRoomId(null)}>Cancel</button>
+              <button style={{ padding: 14, background: 'transparent', color: 'rgba(255,255,255,0.6)', fontWeight: 600, border: 'none', cursor: 'pointer' }} onClick={() => setReplayRoomId(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Question Manager Modal */}
+      {expandedRoom && !viewReview && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setExpandedRoom(null)} style={{ zIndex: 1000, position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div className="modal" style={{ maxWidth: 800, width: '100%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>❓ Manage Room Questions</span>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 24, cursor: 'pointer', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color='white'} onMouseOut={e => e.target.style.color='rgba(255,255,255,0.5)'} onClick={() => setExpandedRoom(null)}>✕</button>
+            </div>
+            <div style={{ padding: '24px 32px', overflowY: 'auto' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'rgba(255,255,255,0.8)' }}>Current Questions ({questions.length})</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 250, overflowY: 'auto', marginBottom: 24, paddingRight: 8 }}>
+                {questions.map((q, i) => (
+                  <div key={q.id} style={{ padding: '12px 16px', background: editingQuestionId === q.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(0,0,0,0.2)', border: editingQuestionId === q.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 14, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%', fontWeight: 500 }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 800, marginRight: 8 }}>{i + 1}.</span> {q.text}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button style={{ background: 'rgba(56, 189, 248, 0.1)', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12 }} onClick={() => { setQForm({ ...q, options: q.options || (q.type === 'multiple' ? ['', '', '', ''] : ['']) }); setEditingQuestionId(q.id); }}>Edit</button>
+                      <button style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12 }} onClick={() => removeQuestion(q.id)}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+                {questions.length === 0 && <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', textAlign: 'center', padding: 20, background: 'rgba(255,255,255,0.02)', borderRadius: 12 }}>No questions added yet.</div>}
+              </div>
+              
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: 24, borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {editingQuestionId ? '✏️ Edit Question' : '➕ Create New Question'}
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                  <select value={qForm.type} onChange={e => setQForm(f => ({ ...f, type: e.target.value, options: e.target.value === 'multiple' ? ['', '', '', ''] : [''] }))} style={{ flex: 1, padding: '12px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, fontSize: 14, outline: 'none' }}>
+                    <option value="multiple" style={{ color: '#000' }}>Multiple Choice</option>
+                    <option value="fillblank" style={{ color: '#000' }}>Identification</option>
+                    <option value="enumeration" style={{ color: '#000' }}>Enumeration</option>
+                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingRight: 12 }}>
+                    <input type="number" value={qForm.points} onChange={e => setQForm(f => ({ ...f, points: Number(e.target.value) }))} style={{ width: 60, padding: '12px 0 12px 16px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} title="Points" />
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>pts</span>
+                  </div>
+                </div>
+                <textarea placeholder="Type your question here..." value={qForm.text} onChange={e => setQForm(f => ({ ...f, text: e.target.value }))} style={{ width: '100%', padding: '14px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, fontSize: 15, marginBottom: 16, outline: 'none', minHeight: 80, resize: 'vertical', fontFamily: 'inherit' }} />
+                
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 12, border: '1px dashed rgba(255,255,255,0.1)', marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 8, textTransform: 'uppercase' }}>Optional Media</div>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <input type="text" placeholder="Paste Image URL..." value={qForm.image || ''} onChange={e => setQForm(f => ({ ...f, image: e.target.value }))} style={{ flex: 1, minWidth: 200, padding: '12px 16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'white', borderRadius: 8, fontSize: 14, outline: 'none' }} />
+                    <label style={{ padding: '12px 20px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>
+                      📁 Upload File
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 2 * 1024 * 1024) { alert('Image too large (max 2MB)'); return; }
+                          const reader = new FileReader();
+                          reader.onload = (e) => setQForm(f => ({ ...f, image: e.target.result }));
+                          reader.readAsDataURL(file);
+                        }
+                      }} />
+                    </label>
+                  </div>
+                  {qForm.image && qForm.image.startsWith('data:image') && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: '#4ade80' }}>✅ Local image attached successfully.</div>
+                  )}
+                </div>
+                
+                {qForm.type === 'multiple' ? (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+                      {qForm.options.map((opt, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingLeft: 16 }}>
+                          <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: 14 }}>{LETTERS[i]}</span>
+                          <input type="text" placeholder={`Option ${LETTERS[i]}`} value={opt} onChange={e => { const ops = [...qForm.options]; ops[i] = e.target.value; setQForm(f => ({ ...f, options: ops })); }} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select value={qForm.correctAnswerIndex} onChange={e => setQForm(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 14, outline: 'none', fontWeight: 600 }}>
+                        {LETTERS.map((l, i) => <option key={i} value={i} style={{ color: '#000' }}>Correct Answer: {l}</option>)}
+                      </select>
+                      <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto', textAlign: 'center' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                      {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input type="text" placeholder={qForm.type === 'enumeration' ? 'Correct Answers (comma separated)' : 'Correct Answer'} value={qForm.options.join(', ')} onChange={e => setQForm(f => ({ ...f, options: e.target.value.split(',').map(s => s.trim()) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 15, outline: 'none', fontWeight: 600 }} />
+                    <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto', textAlign: 'center' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                    {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
