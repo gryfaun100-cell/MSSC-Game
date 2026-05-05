@@ -58,14 +58,14 @@ export default function Login({ onLogin }) {
   const closeModal = () => { setModalType(null); setError(''); };
 
   return (
-    <div className="auth-bg">
+    <div className="auth-bg core-bg-dark">
       <div className="particles-container">
         {PARTICLES}
         {DUCKS}
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 32, zIndex: 1 }}>
-        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 72, marginBottom: 16, filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} />
+        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 72, marginBottom: 16, filter: 'brightness(0) invert(1) drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} />
         <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.5px' }}>Multiplayer Quiz Game</div>
       </div>
 
@@ -79,15 +79,15 @@ export default function Login({ onLogin }) {
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 1.5 }}>Join a live quiz and race your duck to the finish! 🏆</p>
         </div>
 
-        <button 
-          className="btn-guest" 
+        <button
+          className="btn-guest"
           onClick={() => setModalType('guest')}
         >
           <span style={{ fontSize: 22 }}>🦆</span> Continue as Guest
         </button>
 
-        <button 
-          className="btn-host" 
+        <button
+          className="btn-host"
           onClick={() => setModalType('host')}
         >
           Login as Host
@@ -110,16 +110,16 @@ export default function Login({ onLogin }) {
                     <div className="form-group">
                       <label className="form-label">Username / Email</label>
                       <input className="form-input" type="text" placeholder="Enter username or email"
-                        value={form.email} onChange={e => setForm({...form, email: e.target.value})} required autoFocus />
+                        value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required autoFocus />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Password</label>
                       <div className="input-wrapper">
                         <input className="form-input" type={showPw ? 'text' : 'password'} placeholder="Enter password"
-                          value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
+                          value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
                         <button type="button" className="input-icon-btn" onClick={() => setShowPw(!showPw)} tabIndex={-1}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            {showPw ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                            {showPw ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
                           </svg>
                         </button>
                       </div>
@@ -128,14 +128,14 @@ export default function Login({ onLogin }) {
                 ) : (
                   <>
                     <div className="form-group">
-                      <label className="form-label">Full Name <span style={{color:'var(--danger)'}}>*</span></label>
+                      <label className="form-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                       <input className="form-input" type="text" placeholder="Your full name"
-                        value={form.name} onChange={e => setForm({...form, name: e.target.value})} required autoFocus />
+                        value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Company Name <span style={{color:'var(--text-light)',fontWeight:400,textTransform:'none'}}>(optional)</span></label>
+                      <label className="form-label">Company Name <span style={{ color: 'var(--text-light)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
                       <input className="form-input" type="text" placeholder="Your company name"
-                        value={form.company} onChange={e => setForm({...form, company: e.target.value})} />
+                        value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} />
                     </div>
                   </>
                 )}

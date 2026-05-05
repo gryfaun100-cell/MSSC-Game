@@ -6,13 +6,21 @@ export function RaceTrack({ players, totalPoints }) {
   
   return (
     <div style={{ position: 'relative', width: '100%', height: 220, background: 'linear-gradient(180deg, #bae6fd, #38bdf8)', borderRadius: 16, border: '4px solid #7dd3fc', overflow: 'hidden', boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.1)' }}>
+      {/* Flowing Water Effect */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'30\' viewBox=\'0 0 60 30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 15 Q 15 0, 30 15 T 60 15\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'3\' stroke-opacity=\'0.3\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
+        animation: 'waterFlow 2s linear infinite',
+        opacity: 0.8
+      }} />
+      
       {/* Finish line */}
       <div style={{ position: 'absolute', right: 20, top: 0, bottom: 0, width: 24, background: 'repeating-linear-gradient(45deg, #000, #000 12px, #fff 12px, #fff 24px)', opacity: 0.8 }} />
       <div style={{ position: 'absolute', right: 54, top: '50%', transform: 'translateY(-50%)', fontSize: 32, opacity: 0.9 }}>🏁</div>
       
       {/* Swarm of Ducks */}
       {players.map((p, index) => {
-        const pct = totalPoints > 0 ? Math.min((p.score / totalPoints) * 85, 85) : 0;
+        const pct = totalPoints > 0 ? Math.min((p.score / totalPoints), 1) : 0;
         // Distribute them vertically so they "stick together" but stagger nicely.
         // Formula creates rows across the 220px height.
         const yOffset = 15 + (index % 5) * 32 + (index % 3) * 8; 
@@ -21,7 +29,7 @@ export function RaceTrack({ players, totalPoints }) {
         return (
           <div key={p.id} style={{
             position: 'absolute',
-            left: `calc(${pct}% + 10px)`,
+            left: `calc(10px + (100% - 90px) * ${pct})`,
             top: `${yOffset}px`,
             transition: 'left 0.7s cubic-bezier(0.34,1.56,0.64,1)',
             zIndex: 10 + Math.floor(pct),
@@ -30,8 +38,11 @@ export function RaceTrack({ players, totalPoints }) {
             alignItems: 'center',
             filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
           }}>
-            <div style={{width: 38, height: 38, borderRadius: '50%', background: p.color || '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 -2px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.4)'}}>
+            <div style={{width: 38, height: 38, position: 'relative', borderRadius: '50%', background: p.color || '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 -2px 6px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.4)'}}>
               <span style={{ fontSize: 24, transform: 'scaleX(-1)', display: 'inline-block' }}>🦆</span>
+              {p.accessory && p.accessory !== 'none' && (
+                <span style={{ position: 'absolute', top: -14, right: -4, fontSize: 22, transform: 'rotate(15deg)' }}>{p.accessory}</span>
+              )}
             </div>
             <span style={{
               background: p.color || '#0f172a',
@@ -81,7 +92,10 @@ export function Leaderboard({ players, revealPhase }) {
     }
     return <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:10,marginBottom:6,background:bg,border:`1.5px solid ${border}`,transition:'all 0.4s ease'}}>
       <span style={{fontSize:18,width:28}}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
-      <div style={{width:28,height:28,borderRadius:'50%',background:p.color||'#2563eb',color:(p.color==='#f8fafc'||p.color==='#fbbf24'||p.color==='#eab308')?'#0f172a':'white',fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(0,0,0,0.1)'}}>{p.name[0]?.toUpperCase()}</div>
+      <div style={{width:28,height:28,position:'relative',borderRadius:'50%',background:p.color||'#2563eb',color:(p.color==='#f8fafc'||p.color==='#fbbf24'||p.color==='#eab308')?'#0f172a':'white',fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:'1px solid rgba(0,0,0,0.1)'}}>
+        {p.name[0]?.toUpperCase()}
+        {p.accessory && p.accessory !== 'none' && <span style={{ position: 'absolute', top: -10, right: -6, fontSize: 16, transform: 'rotate(15deg)' }}>{p.accessory}</span>}
+      </div>
       <span style={{flex:1,fontSize:13,fontWeight:600,color:textColor}}>{p.name}</span>
       <span style={{fontSize:14,fontWeight:700,color:'#2563eb'}}>{p.score}pts</span>
       {revealPhase && <span style={{fontSize:16}}>{!p.answered?'⏳':p.lastAnswerCorrect?'✅':'❌'}</span>}
@@ -94,7 +108,10 @@ export function WinnersPodium({ players }) {
   const [first,second,third]=sorted;
   const PodiumBlock=({player,rank,height,medal})=>player?<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
     <div style={{fontSize:32}}>{medal}</div>
-    <div style={{width:56,height:56,borderRadius:'50%',background:player.color||'#2563eb',color:(player.color==='#f8fafc'||player.color==='#fbbf24'||player.color==='#eab308')?'#0f172a':'white',border:'2px solid rgba(0,0,0,0.1)',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>{player.name[0]?.toUpperCase()}</div>
+    <div style={{width:56,height:56,position:'relative',borderRadius:'50%',background:player.color||'#2563eb',color:(player.color==='#f8fafc'||player.color==='#fbbf24'||player.color==='#eab308')?'#0f172a':'white',border:'2px solid rgba(0,0,0,0.1)',fontSize:22,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.2)'}}>
+      {player.name[0]?.toUpperCase()}
+      {player.accessory && player.accessory !== 'none' && <span style={{ position: 'absolute', top: -18, right: -8, fontSize: 32, transform: 'rotate(15deg)' }}>{player.accessory}</span>}
+    </div>
     <div style={{fontSize:13,fontWeight:700,textAlign:'center',maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{player.name}</div>
     <div style={{fontSize:12,color:'#64748b'}}>{player.score} pts</div>
     <div style={{width:90,height,background:rank===1?'linear-gradient(180deg,#fbbf24,#f59e0b)':rank===2?'linear-gradient(180deg,#cbd5e1,#94a3b8)':'linear-gradient(180deg,#d97706,#b45309)',borderRadius:'8px 8px 0 0',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:8,color:'white',fontWeight:800,fontSize:20}}>#{rank}</div>
@@ -110,6 +127,7 @@ export function QuestionDisplay({ question, idx, total, revealPhase, revealData 
   if (!question) return null;
   const correctIdx = revealPhase ? (revealData?.correctAnswerIndex ?? question.correctAnswerIndex) : -1;
   return <div>
+    {question.image && <img src={question.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
     <p style={{fontSize:18,fontWeight:700,lineHeight:1.5,marginBottom:16,color:'#0f172a'}}>{question.text}</p>
     {question.type==='multiple'&&<div className="answer-grid" style={{marginTop: 0}}>
       {question.options.map((opt,i)=>{
@@ -126,4 +144,81 @@ export function QuestionDisplay({ question, idx, total, revealPhase, revealData 
       <div style={{fontSize:16,fontWeight:700}}>{revealData?.correctAnswerText}</div>
     </div>}
   </div>;
+}
+
+export function FinishCameraView({ player, rank }) {
+  if (!player) return null;
+  const isWinner = rank === 1;
+  const rankText = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : `${rank}th`;
+  
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '60vh', background: 'linear-gradient(180deg, #38bdf8, #bae6fd, #e0f2fe)', borderRadius: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', border: '8px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+      {/* Finish Banner */}
+      <div style={{ position: 'absolute', top: 40, width: '110%', background: 'white', padding: '10px 0', textAlign: 'center', fontWeight: 900, fontSize: 'clamp(32px, 8vw, 64px)', letterSpacing: 10, color: '#0f172a', borderTop: '6px solid #1e293b', borderBottom: '6px solid #1e293b', transform: 'rotate(-2deg)', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>FINISH</div>
+      
+      {/* Background elements */}
+      <div style={{ position: 'absolute', top: 20, left: 20, fontSize: 64 }}>🏁</div>
+      <div style={{ position: 'absolute', top: 20, right: 20, fontSize: 64 }}>🏁</div>
+
+      {/* The Track */}
+      <div style={{ position: 'absolute', bottom: 0, width: '150%', height: '45%', background: '#334155', transform: 'perspective(500px) rotateX(60deg)', borderTop: '10px solid white' }}>
+        <div style={{ width: '100%', height: '100%', background: 'repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.2) 40px, rgba(255,255,255,0.2) 80px)' }} />
+      </div>
+
+      {/* Red Ribbon (broken) */}
+      {isWinner && (
+        <div style={{ position: 'absolute', bottom: '25%', width: '120%', display: 'flex', justifyContent: 'center', zIndex: 10 }}>
+          <div style={{ width: '50%', height: 40, background: '#ef4444', transform: 'rotate(-8deg) translateY(30px)', boxShadow: '0 5px 10px rgba(0,0,0,0.3)' }} />
+          <div style={{ width: '50%', height: 40, background: '#ef4444', transform: 'rotate(8deg) translateY(30px)', boxShadow: '0 5px 10px rgba(0,0,0,0.3)' }} />
+        </div>
+      )}
+
+      {/* Confetti Particles */}
+      {isWinner && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 15, pointerEvents: 'none' }}>
+          {[...Array(20)].map((_,i) => (
+            <div key={i} style={{
+              position: 'absolute', top: `${Math.random()*50}%`, left: `${Math.random()*100}%`,
+              width: 10, height: 20, background: ['#ef4444','#3b82f6','#22c55e','#eab308'][i%4],
+              animation: `confettiDrop ${1+Math.random()*2}s linear infinite`,
+              transform: `rotate(${Math.random()*360}deg)`
+            }} />
+          ))}
+        </div>
+      )}
+
+      {/* The Duck */}
+      <div style={{ position: 'relative', zIndex: 20, marginBottom: '8%', animation: 'duckBounce 1s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5)' }}>
+        {/* Shadow */}
+        <div style={{ position: 'absolute', bottom: -20, left: '50%', transform: 'translateX(-50%)', width: 140, height: 30, background: 'rgba(0,0,0,0.5)', borderRadius: '50%', filter: 'blur(10px)', zIndex: -1 }} />
+        
+        <div style={{
+          width: 200, height: 200, borderRadius: '50%', background: player.color || '#2563eb', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          boxShadow: 'inset -15px -30px 40px rgba(0,0,0,0.4), 0 20px 40px rgba(0,0,0,0.5)', border: '6px solid rgba(255,255,255,0.4)'
+        }}>
+          <span style={{ fontSize: 130 }}>🦆</span>
+          {player.accessory && player.accessory !== 'none' && (
+             <span style={{ position: 'absolute', top: -35, right: -10, fontSize: 100, transform: 'rotate(15deg)', filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.4))' }}>{player.accessory}</span>
+          )}
+          
+          {/* Medal hanging on neck */}
+          <div style={{ position: 'absolute', bottom: -15, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ display: 'flex', marginBottom: -20, zIndex: -1 }}>
+              <div style={{ width: 8, height: 50, background: '#ef4444', transform: 'rotate(-30deg) translateX(15px)', boxShadow: '0 4px 8px rgba(0,0,0,0.4)' }} />
+              <div style={{ width: 8, height: 50, background: '#ef4444', transform: 'rotate(30deg) translateX(-15px)', boxShadow: '0 4px 8px rgba(0,0,0,0.4)' }} />
+            </div>
+            <div style={{ width: 90, height: 90, background: 'radial-gradient(circle at 30% 30%, #fef08a, #eab308, #a16207)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: '#713f12', border: '5px solid #fef08a', boxShadow: '0 15px 30px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.8)', textShadow: '0 1px 0 rgba(255,255,255,0.6)' }}>
+              {rankText}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes duckBounce { from { transform: translateY(0); } to { transform: translateY(-50px); } }
+        @keyframes confettiDrop { from { transform: translateY(-20px) rotate(0deg); opacity: 1; } to { transform: translateY(500px) rotate(720deg); opacity: 0; } }
+      `}</style>
+    </div>
+  );
 }

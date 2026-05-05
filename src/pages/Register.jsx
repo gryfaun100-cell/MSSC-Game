@@ -34,7 +34,7 @@ export default function Register() {
   return (
     <div className="auth-bg">
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 60, marginBottom: 12, filter: 'drop-shadow(0 4px 12px rgba(37,99,235,0.2))' }} />
+        <img src="/MSSC - Logo.png" alt="MSSC Logo" style={{ height: 60, marginBottom: 12, filter: 'brightness(0) invert(1) drop-shadow(0 4px 12px rgba(37,99,235,0.2))' }} />
         <div style={{ fontSize: 14, color: 'var(--primary)', fontWeight: 500, marginTop: 4 }}>Create your player account</div>
       </div>
 

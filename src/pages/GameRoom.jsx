@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Users, Trophy, Clock, CheckCircle2, XCircle, LogOut, LayoutDashboard, Target } from 'lucide-react';
 import { socket } from '../socket';
 import { API_URL } from '../config';
-import { RaceTrack, CircleTimer, Leaderboard, WinnersPodium, QuestionDisplay } from '../components/GameRoomParts';
+import { RaceTrack, CircleTimer, Leaderboard, WinnersPodium, QuestionDisplay, FinishCameraView } from '../components/GameRoomParts';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -47,7 +47,7 @@ function NavBar({ user, isAdmin, roomName, onBack }) {
     <nav className="navbar">
       <div className="navbar-inner">
         <div className="navbar-brand">
-          <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36 }} />
+          <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, filter: 'brightness(0) invert(1)' }} />
           <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: 12, marginLeft: 4 }}>
             <div className="navbar-title">{roomName || 'Game Room'}</div>
             <div className="navbar-subtitle">{isAdmin ? 'Admin Host' : 'Player'}</div>
@@ -106,7 +106,8 @@ export default function GameRoom({ user }) {
       socket.emit('rejoinRoom', { roomId, isAdmin: true });
     } else {
       const chosenColor = location.state?.color;
-      socket.emit('rejoinRoom', { roomId, isAdmin: false, player: { ...user, color: chosenColor } });
+      const chosenAccessory = location.state?.accessory;
+      socket.emit('rejoinRoom', { roomId, isAdmin: false, player: { ...user, color: chosenColor, accessory: chosenAccessory } });
     }
 
     fetch(`${API_URL}/api/rooms/${roomId}`)
@@ -139,6 +140,12 @@ export default function GameRoom({ user }) {
         if (meData.lastAnswerCorrect) playTone('correct');
         else playTone('wrong');
       }
+      setAnswerResult({
+        correct: meData?.lastAnswerCorrect ?? false,
+        correctAnswerIndex: data.correctAnswerIndex,
+        correctAnswerText: data.correctAnswerText,
+        question: data.question
+      });
     };
     const onRevealCountdown = (n) => setRevealCountdown(n);
     const onTimerTick = (timeLeft) => setQTimeLeft(timeLeft);
@@ -148,8 +155,8 @@ export default function GameRoom({ user }) {
       setAnswered(false); setAnswerResult(null); setOpenText('');
       setQTimeLeft(r.timePerQuestion || 30);
     };
-    const onAnswerResult = (result) => {
-      setAnswerResult(result); setAnswered(true);
+    const onAnswerAck = () => {
+      setAnswered(true);
     };
     const onGameEnded = (r) => setRoom(r);
     const onError = (e) => setError(e.message);
@@ -160,7 +167,7 @@ export default function GameRoom({ user }) {
     socket.on('revealCountdown', onRevealCountdown);
     socket.on('timerTick', onTimerTick);
     socket.on('nextQuestion', onNextQuestion);
-    socket.on('answerResult', onAnswerResult);
+    socket.on('answerAck', onAnswerAck);
     socket.on('gameEnded', onGameEnded);
     socket.on('error', onError);
 
@@ -171,7 +178,7 @@ export default function GameRoom({ user }) {
       socket.off('revealCountdown', onRevealCountdown);
       socket.off('timerTick', onTimerTick);
       socket.off('nextQuestion', onNextQuestion);
-      socket.off('answerResult', onAnswerResult);
+      socket.off('answerAck', onAnswerAck);
       socket.off('gameEnded', onGameEnded);
       socket.off('error', onError);
     };
@@ -204,7 +211,7 @@ export default function GameRoom({ user }) {
   if (isAdmin) {
     const finished = room.status === 'finished';
     return (
-      <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+      <div className="core-bg-light" style={{ minHeight: '100vh' }}>
         <NavBar user={user} isAdmin roomName={room.name} onBack={() => navigate('/admin')} />
 
         {/* Sub-header */}
@@ -328,7 +335,7 @@ export default function GameRoom({ user }) {
   const me = room.players?.find(p => p.id === socket.id);
 
   if (room.status === 'waiting') return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
+    <div className="core-bg-dark" style={{ minHeight: '100vh' }}>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center', padding: 32, color: 'white' }}>
         <div style={{ fontSize: 64, transform: 'scaleX(-1)' }}>🦆</div>
@@ -340,22 +347,24 @@ export default function GameRoom({ user }) {
     </div>
   );
 
-  if (room.status === 'finished') return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
-      <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, padding: 24, textAlign: 'center', color: 'white' }}>
-        <div style={{ fontSize: 64 }}>🏁</div>
-        <h2 style={{ fontSize: 26, fontWeight: 800 }}>Race Finished!</h2>
-        {me && <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>Your Score: <strong style={{ color: '#fbbf24', fontSize: 22 }}>{me.score}</strong> pts</p>}
-        {(() => { const s = [...room.players].sort((a, b) => b.score - a.score); const r = s.findIndex(p => p.id === socket.id) + 1; return r === 1 ? <div style={{ fontSize: 36 }}>🥇 You Won!</div> : r === 2 ? <div style={{ fontSize: 28 }}>🥈 2nd Place!</div> : r === 3 ? <div style={{ fontSize: 28 }}>🥉 3rd Place!</div> : null; })()}
-        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, width: '100%', maxWidth: 400 }}>
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>🏆 Final Rankings</div>
-          <Leaderboard players={room.players ?? []} revealPhase={false} />
+  if (room.status === 'finished') {
+    const sortedPlayers = [...(room.players || [])].sort((a, b) => b.score - a.score);
+    const myRank = sortedPlayers.findIndex(p => p.id === socket.id) + 1;
+    return (
+      <div className="core-bg-dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+          <FinishCameraView player={me} rank={myRank} />
+          
+          <div style={{ width: '100%', background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, marginTop: 24, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12, color: '#0f172a', textAlign: 'center' }}>🏆 Final Rankings</div>
+            <Leaderboard players={room.players ?? []} revealPhase={false} />
+          </div>
+          <button className="btn btn-primary" style={{ marginTop: 24, padding: '14px 32px', fontSize: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} onClick={() => navigate('/dashboard')}>Back to Lobby</button>
         </div>
-        <button className="btn btn-outline" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', borderColor: 'rgba(255,255,255,0.3)' }} onClick={() => navigate('/dashboard')}>Back to Lobby</button>
       </div>
-    </div>
-  );
+    );
+  }
 
   // Playing
   const myScore = me?.score ?? 0;
@@ -363,7 +372,7 @@ export default function GameRoom({ user }) {
   const pct = totalPoints > 0 ? Math.min((myScore / totalPoints) * 82, 82) : 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #4c1d95, #be185d, #ea580c)' }}>
+    <div className="core-bg-dark" style={{ minHeight: '100vh' }}>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
 
       {/* Feedback toast */}
@@ -424,6 +433,7 @@ export default function GameRoom({ user }) {
               <div style={{ height: '100%', background: qTimeLeft <= 5 ? '#ef4444' : '#2563eb', width: `${(qTimeLeft / (room.timePerQuestion || 30)) * 100}%`, transition: 'width 1s linear' }} />
             </div>
             <div style={{ padding: 20 }}>
+              {currentQ.image && <img src={currentQ.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
               <p style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.5, marginBottom: 20 }}>{currentQ.text}</p>
               {currentQ.type === 'multiple' ? (
                 <div className="answer-grid">

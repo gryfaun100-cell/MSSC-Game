@@ -67,6 +67,17 @@ function triggerReveal(roomId) {
 function broadcastReveal(roomId) {
   const room = rooms[roomId];
   if (!room || room.status !== 'playing') return;
+
+  // Apply pending scores and reveal correctness
+  room.players.forEach(p => {
+    if (p.answered) {
+      if (p.pendingScore) p.score += p.pendingScore;
+      p.lastAnswerCorrect = p.pendingCorrect ?? false;
+      delete p.pendingScore;
+      delete p.pendingCorrect;
+    }
+  });
+
   const question = room.questions[room.currentQuestionIndex];
   io.to(roomId).emit('questionReveal', {
     question,
@@ -74,6 +85,8 @@ function broadcastReveal(roomId) {
     correctAnswerText: question.options[question.correctAnswerIndex] ?? question.options[0],
     players: room.players
   });
+  
+  io.to(roomId).emit('roomStateUpdate', room);
   let count = 3;
   io.to(roomId).emit('revealCountdown', count);
   
@@ -173,7 +186,7 @@ io.on('connection', (socket) => {
         existing.id = socket.id;
         socket.emit('roomStateUpdate', room);
       } else if (room.status === 'waiting') {
-        room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room) });
+        room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room), accessory: player.accessory || 'none' });
         io.to(roomId).emit('roomStateUpdate', room);
         io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
       } else {
@@ -191,7 +204,7 @@ io.on('connection', (socket) => {
       socket.emit('roomStateUpdate', room); return;
     }
     if (room.status === 'waiting' || room.status === 'playing') {
-      room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room) });
+      room.players.push({ id: socket.id, name: player.name, email: player.email, score: 0, answered: false, color: player.color || assignColor(room), accessory: player.accessory || 'none' });
       socket.join(roomId);
       io.to(roomId).emit('roomStateUpdate', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
@@ -249,16 +262,11 @@ io.on('connection', (socket) => {
       const ca = (question.options[question.correctAnswerIndex] ?? question.options[0] ?? '').trim().toLowerCase();
       correct = ua === ca;
     }
-    if (correct) player.score += (question.points || 10);
     player.answered = true;
-    player.lastAnswerCorrect = correct;
+    player.pendingCorrect = correct;
+    player.pendingScore = correct ? (question.points || 10) : 0;
 
-    socket.emit('answerResult', {
-      correct,
-      correctAnswerIndex: question.correctAnswerIndex,
-      correctAnswerText: question.options[question.correctAnswerIndex] ?? question.options[0],
-      question
-    });
+    socket.emit('answerAck', true);
     io.to(roomId).emit('roomStateUpdate', room);
 
     // If ALL players answered early → trigger reveal immediately
@@ -274,6 +282,26 @@ io.on('connection', (socket) => {
       room.status = 'finished';
       io.to(roomId).emit('gameEnded', room);
       io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+    }
+  });
+
+  socket.on('replayRoom', ({ roomId, keepPlayers }) => {
+    const room = rooms[roomId];
+    if (room && room.status === 'finished') {
+      clearRoomTimers(roomId);
+      room.currentQuestionIndex = 0;
+      if (!keepPlayers) {
+        room.status = 'waiting';
+        room.players = [];
+        io.to(roomId).emit('roomStateUpdate', room);
+        io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+      } else {
+        room.status = 'playing';
+        room.players.forEach(p => { p.score = 0; p.answered = false; p.lastAnswerCorrect = null; });
+        io.to(roomId).emit('gameStarted', room);
+        io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+        startQuestionTimer(roomId);
+      }
     }
   });
 

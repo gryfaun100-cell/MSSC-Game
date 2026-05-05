@@ -28,7 +28,7 @@ function NavBar({ user, onLogout }) {
     <nav className="navbar">
       <div className="navbar-inner">
         <div className="navbar-brand">
-          <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, width: 'auto' }} />
+          <img src="/MSSC - Logo.png" alt="MSSC" style={{ height: 36, width: 'auto', filter: 'brightness(0) invert(1)' }} />
           <div style={{ borderLeft: '1px solid var(--border)', paddingLeft: 12, marginLeft: 4 }}>
             <div className="navbar-title">Game System</div>
             <div className="navbar-subtitle">Player</div>
@@ -61,11 +61,13 @@ function NavBar({ user, onLogout }) {
 }
 
 const DUCK_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#f97316', '#a855f7', '#ec4899', '#06b6d4', '#84cc16', '#6366f1', '#8b5cf6', '#fbbf24', '#94a3b8', '#14b8a6', '#d946ef', '#78350f', '#0f172a', '#f8fafc', '#1e3a8a', '#fb7185'];
+const ACCESSORIES = ['none', '🎩', '👑', '🧢', '🎀', '🕶️', '🎓', '🤠', '🌸', '🎧'];
 
 export default function Dashboard({ user, onLogout }) {
   const [rooms, setRooms] = useState([]);
   const [joinModal, setJoinModal] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedAccessory, setSelectedAccessory] = useState('none');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="core-bg-light" style={{ minHeight: '100vh' }}>
       <NavBar user={user} onLogout={onLogout} />
 
       <div className="container-sm">
@@ -141,8 +143,13 @@ export default function Dashboard({ user, onLogout }) {
               <button className="modal-close" onClick={() => setJoinModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div style={{ textAlign: 'center', padding: '8px 0 10px' }}>
-                <div style={{ fontSize: 56, marginBottom: 12, display: 'inline-block', filter: `drop-shadow(0 0 8px ${selectedColor})` }}>🦆</div>
+              <div style={{ textAlign: 'center', padding: '8px 0 10px', position: 'relative' }}>
+                <div style={{ position: 'relative', display: 'inline-block', fontSize: 56, marginBottom: 12, filter: `drop-shadow(0 0 8px ${selectedColor})` }}>
+                  🦆
+                  {selectedAccessory !== 'none' && (
+                    <span style={{ position: 'absolute', top: -16, right: -4, fontSize: 32, transform: 'rotate(15deg)' }}>{selectedAccessory}</span>
+                  )}
+                </div>
                 <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{joinModal.name}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{joinModal.playerCount} player(s) waiting</div>
               </div>
@@ -158,13 +165,24 @@ export default function Dashboard({ user, onLogout }) {
                   })}
                 </div>
               </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, textAlign: 'center', color: 'var(--text)' }}>Choose an Accessory:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                  {ACCESSORIES.map(acc => (
+                    <button key={acc} onClick={() => setSelectedAccessory(acc)}
+                      style={{ width: 36, height: 36, borderRadius: '50%', background: selectedAccessory === acc ? '#bfdbfe' : 'transparent', border: selectedAccessory === acc ? '2px solid #2563eb' : '2px solid transparent', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      {acc === 'none' ? '🚫' : acc}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{ background: 'var(--primary-bg)', border: '1px solid #bfdbfe', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: 'var(--primary-dark)', textAlign: 'center' }}>
                 Joining as <strong>{user.name}</strong>. Get ready to race! 🏁
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setJoinModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => { navigate(`/room/${joinModal.id}`, { state: { color: selectedColor } }); setJoinModal(null); }}>
+              <button className="btn btn-primary" onClick={() => { navigate(`/room/${joinModal.id}`, { state: { color: selectedColor, accessory: selectedAccessory } }); setJoinModal(null); }}>
                 ▶ Join Now
               </button>
             </div>
