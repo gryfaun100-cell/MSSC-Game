@@ -18,6 +18,7 @@ const roomSummary = (r) => ({
   id: r.id, name: r.name, status: r.status,
   playerCount: r.players.length, questionCount: r.questions.length,
   timePerQuestion: r.timePerQuestion ?? 30,
+  winScore: r.winScore ?? 100,
   usedColors: r.players.map(p => p.color)
 });
 
@@ -69,14 +70,37 @@ function broadcastReveal(roomId) {
   if (!room || room.status !== 'playing') return;
 
   // Apply pending scores and reveal correctness
+  const winScore = room.winScore || 100;
   room.players.forEach(p => {
     if (p.answered) {
-      if (p.pendingScore) p.score += p.pendingScore;
+      p.score = Math.max(0, (p.score || 0) + (p.pendingScore || 0));
       p.lastAnswerCorrect = p.pendingCorrect ?? false;
       delete p.pendingScore;
       delete p.pendingCorrect;
     }
   });
+
+  // Check if any player has reached the win score
+  const winner = room.players.find(p => p.score >= winScore);
+  if (winner) {
+    clearRoomTimers(roomId);
+    room.status = 'finished';
+    io.to(roomId).emit('questionReveal', {
+      question: room.questions[room.currentQuestionIndex],
+      correctAnswerIndex: room.questions[room.currentQuestionIndex]?.correctAnswerIndex,
+      correctAnswerText: room.questions[room.currentQuestionIndex]?.options?.[room.questions[room.currentQuestionIndex]?.correctAnswerIndex] ?? '',
+      players: room.players,
+      winnerReached: true,
+      winnerName: winner.name,
+      winScore
+    });
+    io.to(roomId).emit('roomStateUpdate', room);
+    setTimeout(() => {
+      io.to(roomId).emit('gameEnded', room);
+      io.emit('roomsUpdated', Object.values(rooms).map(roomSummary));
+    }, 3000);
+    return;
+  }
 
   const question = room.questions[room.currentQuestionIndex];
   io.to(roomId).emit('questionReveal', {
@@ -160,11 +184,12 @@ app.get('/api/rooms/:roomId', (req, res) => {
 io.on('connection', (socket) => {
   console.log('Connected:', socket.id);
 
-  socket.on('createRoom', ({ roomName, questions, timePerQuestion }) => {
+  socket.on('createRoom', ({ roomName, questions, timePerQuestion, winScore }) => {
     const roomId = 'room_' + Math.random().toString(36).substr(2, 9);
     rooms[roomId] = {
       id: roomId, name: roomName, status: 'waiting',
       questions: questions || [], timePerQuestion: timePerQuestion || 30,
+      winScore: winScore || 100,
       currentQuestionIndex: 0, players: [], hostId: socket.id,
       questionStartedAt: null
     };
@@ -277,7 +302,9 @@ io.on('connection', (socket) => {
     }
     player.answered = true;
     player.pendingCorrect = correct;
-    player.pendingScore = correct ? (question.points || 10) : 0;
+    const questionPoints = question.points || 10;
+    const deductionPoints = Math.max(1, Math.floor(questionPoints * 0.2)); // 20% deduction, min 1
+    player.pendingScore = correct ? questionPoints : -deductionPoints;
 
     socket.emit('answerAck', true);
     io.to(roomId).emit('roomStateUpdate', room);

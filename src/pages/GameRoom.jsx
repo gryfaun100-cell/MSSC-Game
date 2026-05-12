@@ -149,7 +149,10 @@ export default function GameRoom({ user }) {
         correct: meData?.lastAnswerCorrect ?? false,
         correctAnswerIndex: data.correctAnswerIndex,
         correctAnswerText: data.correctAnswerText,
-        question: data.question
+        question: data.question,
+        winnerReached: data.winnerReached ?? false,
+        winnerName: data.winnerName ?? null,
+        winScore: data.winScore ?? null,
       });
     };
     const onRevealCountdown = (n) => setRevealCountdown(n);
@@ -256,7 +259,13 @@ export default function GameRoom({ user }) {
           
           {/* Top Half: Race Track (Full Width like Player POV) */}
           <div style={{ height: '40vh', minHeight: 250, padding: '24px 24px 0', display: 'flex', flexDirection: 'column' }}>
-            <RaceTrack players={room.players ?? []} totalPoints={room.questions?.reduce((s, q) => s + (q.points || 10), 0) || 1} />
+            <RaceTrack players={room.players ?? []} totalPoints={room.winScore || 100} />
+            {/* Win score indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: '8px 16px' }}>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>🏆 Win Score:</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#fbbf24' }}>{room.winScore || 100} pts</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>• Wrong answer = -20% of question points</span>
+            </div>
           </div>
 
           {/* Bottom Half: Game Controls */}
@@ -440,8 +449,8 @@ export default function GameRoom({ user }) {
 
   // Playing
   const myScore = me?.score ?? 0;
-  const totalPoints = room.questions?.reduce((sum, q) => sum + (q.points || 10), 0) || 1;
-  const pct = totalPoints > 0 ? Math.min((myScore / totalPoints) * 82, 82) : 0;
+  const winScore = room.winScore || 100;
+  const totalPoints = winScore; // race finishes at winScore
 
   return (
     <div className="game-dash-bg core-bg-dark" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -452,15 +461,30 @@ export default function GameRoom({ user }) {
       </div>
       <NavBar user={user} isAdmin={false} roomName={room.name} onBack={() => navigate('/dashboard')} />
 
-      {/* Top Half: Race Track (Full Width like Admin POV) */}
+      {/* Top Half: Race Track */}
       <div style={{ height: '40vh', minHeight: 250, padding: '24px 24px 0', display: 'flex', flexDirection: 'column' }}>
         <RaceTrack players={room.players ?? []} totalPoints={totalPoints} />
+        {/* Win score progress bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, background: 'rgba(0,0,0,0.3)', borderRadius: 12, padding: '8px 16px' }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600, whiteSpace: 'nowrap' }}>🏆 Win at {winScore} pts</span>
+          <div style={{ flex: 1, height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg,#38bdf8,#a855f7)', width: `${Math.min((myScore / winScore) * 100, 100)}%`, transition: 'width 0.8s ease', borderRadius: 99 }} />
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#fbbf24', whiteSpace: 'nowrap' }}>{myScore} / {winScore}</span>
+        </div>
       </div>
 
       {/* Feedback toast */}
       {answerResult && (
         <div style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 500, padding: '10px 28px', borderRadius: 99, fontSize: 15, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', color: 'white', background: answerResult.correct ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap', animation: 'popIn 0.2s ease' }}>
-          {answerResult.correct ? '✅ Correct!' : '❌ Wrong!'}
+          {answerResult.correct ? `✅ Correct! +${room.questions?.[room.currentQuestionIndex ?? 0]?.points || 10} pts` : `❌ Wrong! -${Math.max(1, Math.floor((room.questions?.[room.currentQuestionIndex ?? 0]?.points || 10) * 0.2))} pts`}
+        </div>
+      )}
+
+      {/* Winner reached banner */}
+      {revealPhase && answerResult?.winnerReached && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 600, padding: '14px 24px', textAlign: 'center', background: 'linear-gradient(90deg, #f59e0b, #ef4444)', color: 'white', fontWeight: 800, fontSize: 18, animation: 'popIn 0.3s ease', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+          🏆 {answerResult.winnerName} reached {answerResult.winScore} points — Game Over!
         </div>
       )}
 

@@ -44,6 +44,7 @@ function ConfirmModal({ title, message, confirmText, confirmColor, onConfirm, on
 function CreateRoomModal({ onClose, onCreated }) {
   const [roomName, setRoomName] = useState('');
   const [timePerQ, setTimePerQ] = useState(30);
+  const [winScore, setWinScore] = useState(100);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -53,10 +54,12 @@ function CreateRoomModal({ onClose, onCreated }) {
     if (!roomName.trim()) { setError("Please enter a room name."); return; }
     const t = parseInt(timePerQ, 10);
     if (isNaN(t) || t < 5) { setError("Timer must be at least 5 seconds."); return; }
+    const w = parseInt(winScore, 10);
+    if (isNaN(w) || w < 10) { setError("Win score must be at least 10 points."); return; }
     if (!socket.connected) { setError("Cannot connect to server. Is the backend running?"); return; }
 
     setLoading(true);
-    onCreated({ roomName, timePerQuestion: t });
+    onCreated({ roomName, timePerQuestion: t, winScore: w });
     setTimeout(() => setLoading(false), 5000);
   };
 
@@ -74,9 +77,14 @@ function CreateRoomModal({ onClose, onCreated }) {
               <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Room Name</label>
               <input style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 15, outline: 'none' }} type="text" placeholder="e.g. Training Quiz Round 1" value={roomName} onChange={(e) => setRoomName(e.target.value)} autoFocus disabled={loading} />
             </div>
-            <div>
+            <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Time per Question (seconds)</label>
               <input style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 15, outline: 'none' }} type="number" min={5} max={120} value={timePerQ} onChange={(e) => setTimePerQ(e.target.value)} disabled={loading} />
+            </div>
+            <div style={{ padding: '16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#fbbf24', marginBottom: 8 }}>🏆 Win Score (First to reach wins!)</label>
+              <input style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 12, fontSize: 15, outline: 'none', fontWeight: 700 }} type="number" min={10} max={10000} value={winScore} onChange={(e) => setWinScore(e.target.value)} disabled={loading} />
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 6, marginBottom: 0 }}>The first player to reach this score wins. Wrong answers deduct 20% of the question's points.</p>
             </div>
           </div>
           <div style={{ padding: '24px 32px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
@@ -127,8 +135,8 @@ export default function AdminDashboard({ user, onLogout }) {
     };
   }, []);
 
-  const handleCreateRoom = ({ roomName, timePerQuestion }) => {
-    socket.emit('createRoom', { roomName, timePerQuestion, questions: [] });
+  const handleCreateRoom = ({ roomName, timePerQuestion, winScore }) => {
+    socket.emit('createRoom', { roomName, timePerQuestion, winScore, questions: [] });
   };
 
   const addQuestion = () => {
