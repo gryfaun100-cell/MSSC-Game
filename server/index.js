@@ -139,6 +139,15 @@ app.post('/api/login', (req, res) => {
   res.json({ success: true, user: { name: user.name, email: user.email, role: user.role } });
 });
 
+app.get('/api/users', (req, res) => {
+  res.json(users.filter(u => u.role === 'player').map(u => ({
+    name: u.name,
+    email: u.email,
+    company: u.company,
+    role: u.role
+  })));
+});
+
 app.get('/api/rooms', (req, res) => res.json(Object.values(rooms).map(roomSummary)));
 
 app.get('/api/rooms/:roomId', (req, res) => {

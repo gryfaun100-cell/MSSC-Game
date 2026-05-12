@@ -2071,9 +2071,9 @@ body {
 }
 
 @media (max-width: 768px) {
-  .topbar-neo { flex-direction: column; padding: 12px; gap: 12px; }
-  .topbar-neo nav { order: 3; width: 100%; justify-content: center; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
-  .topbar-neo > div:last-child { align-self: flex-end; position: absolute; top: 12px; right: 12px; }
+  .topbar-neo { flex-wrap: wrap; padding: 12px; gap: 12px; }
+  .topbar-neo nav { order: 3; width: 100%; justify-content: center; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: flex; }
+  .topbar-neo > div:last-child { align-self: center; position: static; }
   .game-main-content { padding: 16px; }
   .room-card-neo { padding: 16px; }
   .glass-card { padding: 16px; }

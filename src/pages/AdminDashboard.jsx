@@ -103,12 +103,14 @@ export default function AdminDashboard({ user, onLogout }) {
   const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, matchingPairs: [['',''],['',''],['','']], type: 'multiple', points: 10, image: '' });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [registeredPlayers, setRegisteredPlayers] = useState([]);
 
   const totalPlayers = rooms.reduce((s, r) => s + r.playerCount, 0);
   const activeGames = rooms.filter(r => r.status === 'playing').length;
 
   useEffect(() => {
     fetch(`${API_URL}/api/rooms`).then(r => r.json()).then(setRooms).catch(console.error);
+    fetch(`${API_URL}/api/users`).then(r => r.json()).then(setRegisteredPlayers).catch(console.error);
 
     const onRoomsUpdated = (newRooms) => setRooms(newRooms);
     const onRoomCreated = (room) => {
@@ -328,8 +330,48 @@ export default function AdminDashboard({ user, onLogout }) {
 
           {activeTab === 'players' && (
             <div className="glass-card">
-              <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Player Analytics</h2>
-              <p style={{ color: 'rgba(255,255,255,0.6)' }}>Advanced analytics and player management coming soon.</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Player Analytics</h2>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>View registered players who have accessed the game.</p>
+                </div>
+                <div style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', padding: '8px 16px', borderRadius: 12, fontWeight: 700 }}>
+                  Total: {registeredPlayers.length}
+                </div>
+              </div>
+              
+              {registeredPlayers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(0,0,0,0.2)', borderRadius: 16 }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)' }}>No players have registered yet.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <th style={{ padding: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>Name</th>
+                        <th style={{ padding: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>Email / Username</th>
+                        <th style={{ padding: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>Company</th>
+                        <th style={{ padding: '16px', color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: 13, textTransform: 'uppercase' }}>Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {registeredPlayers.map((player, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                          <td style={{ padding: '16px', fontWeight: 600, color: '#fff' }}>{player.name}</td>
+                          <td style={{ padding: '16px', color: 'rgba(255,255,255,0.7)' }}>{player.email}</td>
+                          <td style={{ padding: '16px', color: 'rgba(255,255,255,0.7)' }}>{player.company || '-'}</td>
+                          <td style={{ padding: '16px' }}>
+                            <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
+                              {player.role}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
