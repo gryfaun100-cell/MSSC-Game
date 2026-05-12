@@ -142,10 +142,13 @@ export function WinnersPodium({ players }) {
 export function QuestionDisplay({ question, idx, total, revealPhase, revealData }) {
   if (!question) return null;
   const correctIdx = revealPhase ? (revealData?.correctAnswerIndex ?? question.correctAnswerIndex) : -1;
+  const typeLabel = { multiple:'Multiple Choice', true_false:'True or False', fillblank:'Identification', enumeration:'Enumeration', short_answer:'Short Answer', ordering:'Ordering', matching:'Matching' }[question.type] || question.type;
   return <div>
     {question.image && <img src={question.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
     <p style={{fontSize:18,fontWeight:700,lineHeight:1.5,marginBottom:16,color:'white'}}>{question.text}</p>
-    {question.type==='multiple'&&<div className="answer-grid" style={{marginTop: 0}}>
+
+    {/* Multiple Choice */}
+    {question.type==='multiple' && <div className="answer-grid" style={{marginTop:0}}>
       {question.options.map((opt,i)=>{
         let bg='rgba(0,0,0,0.2)',border='rgba(255,255,255,0.1)',color='white';
         if(revealPhase){bg=i===correctIdx?'rgba(34,197,94,0.2)':'rgba(239,68,68,0.2)';border=i===correctIdx?'#22c55e':'#ef4444';color=i===correctIdx?'#4ade80':'#fca5a5';}
@@ -155,7 +158,42 @@ export function QuestionDisplay({ question, idx, total, revealPhase, revealData 
         </div>;
       })}
     </div>}
-    {question.type!=='multiple'&&revealPhase&&<div style={{background:'rgba(34,197,94,0.2)',border:'2px solid #22c55e',borderRadius:10,padding:'10px 16px',marginTop:8}}>
+
+    {/* True or False */}
+    {question.type==='true_false' && <div style={{display:'flex',gap:12}}>
+      {['True','False'].map((label,i)=>{
+        let border=revealPhase?(i===correctIdx?'#22c55e':'#ef4444'):(i===0?'#22c55e':'#ef4444');
+        let bg=revealPhase?(i===correctIdx?'rgba(34,197,94,0.25)':'rgba(239,68,68,0.1)'):(i===0?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)');
+        return <div key={i} style={{flex:1,padding:'14px',borderRadius:12,border:`2px solid ${border}`,background:bg,fontSize:16,fontWeight:800,color:'white',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+          {i===0?'✅':'❌'} {label}{i===correctIdx&&revealPhase&&<span> ✓</span>}
+        </div>;
+      })}
+    </div>}
+
+    {/* Ordering */}
+    {question.type==='ordering' && <div style={{display:'flex',flexDirection:'column',gap:6}}>
+      {question.options.map((opt,i)=>(
+        <div key={i} style={{padding:'8px 14px',borderRadius:10,fontSize:14,display:'flex',gap:10,background:revealPhase?'rgba(34,197,94,0.15)':'rgba(245,158,11,0.1)',border:`1px solid ${revealPhase?'#22c55e':'#f59e0b'}`,color:'white'}}>
+          <span style={{color:revealPhase?'#4ade80':'#f59e0b',fontWeight:700,minWidth:22}}>{i+1}.</span>{opt}
+        </div>
+      ))}
+      {revealPhase && <div style={{fontSize:11,color:'#4ade80',marginTop:4}}>✓ Correct order shown above</div>}
+    </div>}
+
+    {/* Matching */}
+    {question.type==='matching' && <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <div style={{fontWeight:700,fontSize:11,color:'#6366f1',paddingBottom:2}}>Column A</div>
+      <div style={{fontWeight:700,fontSize:11,color:'#a855f7',paddingBottom:2}}>Column B</div>
+      {(question.matchingPairs||[]).map(([a,b],i)=>(
+        <React.Fragment key={i}>
+          <div style={{padding:'6px 12px',borderRadius:8,fontSize:12,background:'rgba(99,102,241,0.15)',border:'1px solid #6366f1',color:'white'}}>{String.fromCharCode(65+i)}. {a}</div>
+          <div style={{padding:'6px 12px',borderRadius:8,fontSize:12,background:revealPhase?'rgba(34,197,94,0.15)':'rgba(168,85,247,0.15)',border:`1px solid ${revealPhase?'#22c55e':'#a855f7'}`,color:'white'}}>{b}{revealPhase&&<span style={{color:'#4ade80',marginLeft:6}}>✓</span>}</div>
+        </React.Fragment>
+      ))}
+    </div>}
+
+    {/* Open-text types reveal */}
+    {['fillblank','enumeration','short_answer'].includes(question.type)&&revealPhase&&<div style={{background:'rgba(34,197,94,0.2)',border:'2px solid #22c55e',borderRadius:10,padding:'10px 16px',marginTop:8}}>
       <div style={{fontSize:11,fontWeight:700,color:'#4ade80',marginBottom:4}}>CORRECT ANSWER</div>
       <div style={{fontSize:16,fontWeight:700,color:'white'}}>{revealData?.correctAnswerText}</div>
     </div>}

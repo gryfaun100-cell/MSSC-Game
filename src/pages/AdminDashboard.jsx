@@ -4,7 +4,25 @@ import { Plus, Trash2 } from 'lucide-react';
 import { API_URL } from '../config';
 import { socket } from '../socket';
 
-const LETTERS = ['A', 'B', 'C', 'D'];
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+const QUESTION_TYPES = [
+  { value: 'multiple',    label: '🔤 Multiple Choice' },
+  { value: 'true_false',  label: '✅ True or False' },
+  { value: 'fillblank',   label: '🖊️ Identification' },
+  { value: 'enumeration', label: '📋 Enumeration' },
+  { value: 'short_answer',label: '💬 Short Answer' },
+  { value: 'ordering',    label: '🔢 Ordering' },
+  { value: 'matching',    label: '🔗 Matching' },
+];
+
+function getDefaultOptions(type) {
+  if (type === 'multiple')     return ['', '', '', ''];
+  if (type === 'true_false')   return ['True', 'False'];
+  if (type === 'ordering')     return ['', '', '', ''];
+  if (type === 'matching')     return ['', '', '', ''];
+  return [''];
+}
 
 function ConfirmModal({ title, message, confirmText, confirmColor, onConfirm, onClose }) {
   return (
@@ -82,7 +100,7 @@ export default function AdminDashboard({ user, onLogout }) {
   const [expandedRoom, setExpandedRoom] = useState(null);
   const [viewReview, setViewReview] = useState(false);
   const [questions, setQuestions] = useState([]);
-  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' });
+  const [qForm, setQForm] = useState({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, matchingPairs: [['',''],['',''],['','']], type: 'multiple', points: 10, image: '' });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -113,18 +131,19 @@ export default function AdminDashboard({ user, onLogout }) {
 
   const addQuestion = () => {
     if (!qForm.text.trim()) return alert('Enter a question.');
-    if (qForm.type === 'multiple' && qForm.options.some(o => typeof o !== 'string' || !o.trim())) return alert('Fill all answer options.');
-    if (qForm.type !== 'multiple' && (!qForm.options[0] || typeof qForm.options[0] !== 'string' || !qForm.options[0].trim())) return alert('Provide at least one correct answer.');
-    
+    if ((qForm.type === 'multiple' || qForm.type === 'ordering') && qForm.options.some(o => typeof o !== 'string' || !o.trim())) return alert('Fill all answer options.');
+    if (qForm.type === 'matching' && qForm.matchingPairs.some(([a,b]) => !a.trim() || !b.trim())) return alert('Fill all matching pairs.');
+    if (['fillblank','enumeration','short_answer'].includes(qForm.type) && (!qForm.options[0] || !qForm.options[0].trim())) return alert('Provide at least one correct answer.');
+
     let newQuestions;
     if (editingQuestionId) {
       newQuestions = questions.map(q => q.id === editingQuestionId ? { ...qForm, id: q.id } : q);
     } else {
       newQuestions = [...questions, { ...qForm, id: Date.now() }];
     }
-    
+
     setQuestions(newQuestions);
-    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' });
+    setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, matchingPairs: [['',''],['',''],['','']], type: 'multiple', points: 10, image: '' });
     setEditingQuestionId(null);
     if (expandedRoom) socket.emit('updateRoomQuestions', { roomId: expandedRoom, questions: newQuestions });
   };
@@ -271,6 +290,18 @@ export default function AdminDashboard({ user, onLogout }) {
                           </button>
                         )}
                         {room.status === 'finished' && (
+                          <button style={{ padding: '10px 14px', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.35)', borderRadius: 10, color: '#7dd3fc', fontWeight: 700, cursor: 'pointer', fontSize: 13, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                            onMouseOver={e => e.currentTarget.style.background='rgba(56,189,248,0.22)'}
+                            onMouseOut={e => e.currentTarget.style.background='rgba(56,189,248,0.12)'}
+                            onClick={() => {
+                              setExpandedRoom(room.id);
+                              setViewReview(false);
+                              fetch(`${API_URL}/api/rooms/${room.id}`).then(r => r.json()).then(d => setQuestions(d.questions || []));
+                            }}>
+                            ✏️ Edit Qs
+                          </button>
+                        )}
+                        {room.status === 'finished' && (
                           <button style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10, color: '#fff', cursor: 'pointer' }} onClick={() => setReplayRoomId(room.id)}>🔄</button>
                         )}
                         <button style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239, 68, 68, 0.1)', border: 'none', borderRadius: 10, color: '#ef4444', cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={e => e.target.style.background='rgba(239, 68, 68, 0.2)'} onMouseOut={e => e.target.style.background='rgba(239, 68, 68, 0.1)'} onClick={() => setDeleteRoomId(room.id)}>
@@ -362,10 +393,8 @@ export default function AdminDashboard({ user, onLogout }) {
                   {editingQuestionId ? '✏️ Edit Question' : '➕ Create New Question'}
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-                  <select value={qForm.type} onChange={e => setQForm(f => ({ ...f, type: e.target.value, options: e.target.value === 'multiple' ? ['', '', '', ''] : [''] }))} style={{ flex: 1, padding: '12px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, fontSize: 14, outline: 'none' }}>
-                    <option value="multiple" style={{ color: '#000' }}>Multiple Choice</option>
-                    <option value="fillblank" style={{ color: '#000' }}>Identification</option>
-                    <option value="enumeration" style={{ color: '#000' }}>Enumeration</option>
+                  <select value={qForm.type} onChange={e => setQForm(f => ({ ...f, type: e.target.value, options: getDefaultOptions(e.target.value), matchingPairs: [['',''],['',''],['','']], correctAnswerIndex: 0 }))} style={{ flex: 1, padding: '12px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, fontSize: 14, outline: 'none' }}>
+                    {QUESTION_TYPES.map(qt => <option key={qt.value} value={qt.value} style={{ color: '#000' }}>{qt.label}</option>)}
                   </select>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingRight: 12 }}>
                     <input type="number" value={qForm.points} onChange={e => setQForm(f => ({ ...f, points: Number(e.target.value) }))} style={{ width: 60, padding: '12px 0 12px 16px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} title="Points" />
@@ -396,30 +425,102 @@ export default function AdminDashboard({ user, onLogout }) {
                   )}
                 </div>
                 
-                {qForm.type === 'multiple' ? (
+                {/* ── MULTIPLE CHOICE ── */}
+                {qForm.type === 'multiple' && (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
                       {qForm.options.map((opt, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingLeft: 16 }}>
-                          <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: 14 }}>{LETTERS[i]}</span>
-                          <input type="text" placeholder={`Option ${LETTERS[i]}`} value={opt} onChange={e => { const ops = [...qForm.options]; ops[i] = e.target.value; setQForm(f => ({ ...f, options: ops })); }} style={{ flex: 1, padding: '12px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} />
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingLeft: 16, gap: 8 }}>
+                          <span style={{ color: '#38bdf8', fontWeight: 800, fontSize: 14, minWidth: 18 }}>{LETTERS[i]}</span>
+                          <input type="text" placeholder={`Option ${LETTERS[i]}`} value={opt} onChange={e => { const ops = [...qForm.options]; ops[i] = e.target.value; setQForm(f => ({ ...f, options: ops })); }} style={{ flex: 1, padding: '12px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} />
+                          {qForm.options.length > 2 && (
+                            <button onClick={() => { const ops = qForm.options.filter((_,j)=>j!==i); setQForm(f => ({ ...f, options: ops, correctAnswerIndex: Math.min(f.correctAnswerIndex, ops.length-1) })); }} style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.15)', border: 'none', color: '#ef4444', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }} title="Remove option">✕</button>
+                          )}
                         </div>
                       ))}
                     </div>
+                    <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                      {qForm.options.length < 6 && (
+                        <button onClick={() => setQForm(f => ({ ...f, options: [...f.options, ''] }))} style={{ padding: '8px 18px', background: 'rgba(56,189,248,0.1)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>＋ Add Choice</button>
+                      )}
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', alignSelf: 'center' }}>{qForm.options.length} choices (min 2, max 6)</span>
+                    </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <select value={qForm.correctAnswerIndex} onChange={e => setQForm(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 14, outline: 'none', fontWeight: 600 }}>
-                        {LETTERS.map((l, i) => <option key={i} value={i} style={{ color: '#000' }}>Correct Answer: {l}</option>)}
+                      <select value={qForm.correctAnswerIndex} onChange={e => setQForm(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 14, outline: 'none', fontWeight: 600 }}>
+                        {qForm.options.map((_, i) => <option key={i} value={i} style={{ color: '#000' }}>✓ Correct: {LETTERS[i]}</option>)}
                       </select>
-                      <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto', textAlign: 'center' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
-                      {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                      <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15 }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                      {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['','','',''], correctAnswerIndex: 0, matchingPairs:[['',''],['',''],['','']], type: 'multiple', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
                     </div>
                   </>
-                ) : (
+                )}
+
+                {/* ── TRUE / FALSE ── */}
+                {qForm.type === 'true_false' && (
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input type="text" placeholder={qForm.type === 'enumeration' ? 'Correct Answers (comma separated)' : 'Correct Answer'} value={qForm.options.join(', ')} onChange={e => setQForm(f => ({ ...f, options: e.target.value.split(',').map(s => s.trim()) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 15, outline: 'none', fontWeight: 600 }} />
-                    <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto', textAlign: 'center' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
-                    {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['', '', '', ''], correctAnswerIndex: 0, type: 'multiple', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                    <select value={qForm.correctAnswerIndex} onChange={e => setQForm(f => ({ ...f, correctAnswerIndex: Number(e.target.value) }))} style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 14, outline: 'none', fontWeight: 600 }}>
+                      <option value={0} style={{ color: '#000' }}>✓ Correct: True</option>
+                      <option value={1} style={{ color: '#000' }}>✓ Correct: False</option>
+                    </select>
+                    <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15 }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                    {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['True','False'], correctAnswerIndex: 0, matchingPairs:[['',''],['',''],['','']], type: 'true_false', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
                   </div>
+                )}
+
+                {/* ── IDENTIFICATION / SHORT ANSWER / ENUMERATION ── */}
+                {['fillblank','short_answer','enumeration'].includes(qForm.type) && (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input type="text"
+                      placeholder={qForm.type === 'enumeration' ? 'Correct answers, separated by commas' : 'Correct answer'}
+                      value={qForm.options.join(', ')}
+                      onChange={e => setQForm(f => ({ ...f, options: e.target.value.split(',').map(s => s.trim()) }))}
+                      style={{ flex: 1, minWidth: 200, padding: '14px 16px', background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: 12, fontSize: 15, outline: 'none', fontWeight: 600 }} />
+                    <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15 }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                    {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: [''], correctAnswerIndex: 0, matchingPairs:[['',''],['',''],['','']], type: qForm.type, points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                  </div>
+                )}
+
+                {/* ── ORDERING ── */}
+                {qForm.type === 'ordering' && (
+                  <>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 10 }}>Enter items in the CORRECT order (players must re-arrange them)</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                      {qForm.options.map((opt, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, paddingLeft: 16, gap: 8 }}>
+                          <span style={{ color: '#f59e0b', fontWeight: 800, fontSize: 13, minWidth: 20 }}>{i + 1}.</span>
+                          <input type="text" placeholder={`Item ${i + 1}`} value={opt} onChange={e => { const ops = [...qForm.options]; ops[i] = e.target.value; setQForm(f => ({ ...f, options: ops })); }} style={{ flex: 1, padding: '12px 8px', background: 'transparent', border: 'none', color: 'white', fontSize: 14, outline: 'none' }} />
+                          {qForm.options.length > 2 && <button onClick={() => setQForm(f => ({ ...f, options: f.options.filter((_,j)=>j!==i) }))} style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.15)', border: 'none', color: '#ef4444', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>✕</button>}
+                        </div>
+                      ))}
+                    </div>
+                    {qForm.options.length < 6 && <button onClick={() => setQForm(f => ({ ...f, options: [...f.options, ''] }))} style={{ padding: '8px 18px', background: 'rgba(245,158,11,0.1)', border: '1px solid #f59e0b', color: '#f59e0b', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, marginBottom: 14 }}>＋ Add Item</button>}
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                      {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: ['','','',''], correctAnswerIndex: 0, matchingPairs:[['',''],['',''],['','']], type: 'ordering', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                    </div>
+                  </>
+                )}
+
+                {/* ── MATCHING ── */}
+                {qForm.type === 'matching' && (
+                  <>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 10 }}>Enter matching pairs — Column A → Column B</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                      {qForm.matchingPairs.map(([a, b], i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input type="text" placeholder={`Column A item ${i+1}`} value={a} onChange={e => { const p=[...qForm.matchingPairs]; p[i]=[e.target.value,p[i][1]]; setQForm(f=>({...f,matchingPairs:p})); }} style={{ flex: 1, padding: '10px 14px', background: 'rgba(99,102,241,0.1)', border: '1px solid #6366f1', color: 'white', borderRadius: 10, fontSize: 13, outline: 'none' }} />
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>→</span>
+                          <input type="text" placeholder={`Column B item ${i+1}`} value={b} onChange={e => { const p=[...qForm.matchingPairs]; p[i]=[p[i][0],e.target.value]; setQForm(f=>({...f,matchingPairs:p})); }} style={{ flex: 1, padding: '10px 14px', background: 'rgba(168,85,247,0.1)', border: '1px solid #a855f7', color: 'white', borderRadius: 10, fontSize: 13, outline: 'none' }} />
+                          {qForm.matchingPairs.length > 2 && <button onClick={() => setQForm(f=>({...f,matchingPairs:f.matchingPairs.filter((_,j)=>j!==i)}))} style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.15)', border: 'none', color: '#ef4444', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>✕</button>}
+                        </div>
+                      ))}
+                    </div>
+                    {qForm.matchingPairs.length < 6 && <button onClick={() => setQForm(f=>({...f,matchingPairs:[...f.matchingPairs,['','']]}))} style={{ padding: '8px 18px', background: 'rgba(168,85,247,0.1)', border: '1px solid #a855f7', color: '#a855f7', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, marginBottom: 14 }}>＋ Add Pair</button>}
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <button onClick={addQuestion} className="btn-neon" style={{ padding: '14px 32px', fontSize: 15, flex: '1 1 auto' }}>{editingQuestionId ? 'Save Edit' : 'Add Question'}</button>
+                      {editingQuestionId && <button onClick={() => { setEditingQuestionId(null); setQForm({ text: '', options: [''], correctAnswerIndex: 0, matchingPairs:[['',''],['',''],['','']], type: 'matching', points: 10, image: '' }); }} style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

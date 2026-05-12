@@ -270,7 +270,7 @@ export default function GameRoom({ user }) {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>📋 Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
                     <button className="btn btn-outline" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => setEditingQuestion(currentQ)}>✏️ Edit</button>
                     <span style={{ background: '#eff6ff', color: '#3333aa', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
-                      {currentQ.type === 'multiple' ? 'Multiple Choice' : currentQ.type === 'fillblank' ? 'Fill in Blank' : 'Enumeration'}
+                      {{ multiple:'Multiple Choice', true_false:'True or False', fillblank:'Identification', enumeration:'Enumeration', short_answer:'Short Answer', ordering:'Ordering', matching:'Matching' }[currentQ.type] || currentQ.type}
                     </span>
                     {revealPhase && revealCountdown > 0 && (
                       <span style={{ background: '#fef9c3', color: '#a16207', padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700, animation: 'pulse 0.5s ease infinite alternate' }}>Next in {revealCountdown}s...</span>
@@ -487,7 +487,7 @@ export default function GameRoom({ user }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Q{(room.currentQuestionIndex ?? 0) + 1}/{totalQ}</span>
                 <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#7dd3fc', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600 }}>
-                  {currentQ.type === 'multiple' ? 'Multiple Choice' : currentQ.type === 'fillblank' ? 'Fill in Blank' : 'Enumeration'}
+                  {{ multiple:'Multiple Choice', true_false:'True or False', fillblank:'Identification', enumeration:'Enumeration', short_answer:'Short Answer', ordering:'Ordering', matching:'Matching' }[currentQ.type] || currentQ.type}
                 </span>
               </div>
               <CircleTimer value={qTimeLeft} max={room.timePerQuestion || 30} />
@@ -498,17 +498,31 @@ export default function GameRoom({ user }) {
             <div style={{ padding: 20 }}>
               {currentQ.image && <img src={currentQ.image} alt="Question Context" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, marginBottom: 16, objectFit: 'contain' }} />}
               <p style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.5, marginBottom: 20, color: 'white' }}>{currentQ.text}</p>
-              {currentQ.type === 'multiple' ? (
+              {/* Multiple Choice */}
+              {currentQ.type === 'multiple' && (
                 <div className="answer-grid">
                   {currentQ.options.map((opt, i) => (
                     <button key={i} onClick={() => submitAnswer(i, opt)} disabled={answered}
                       style={{ width: '100%', padding: '16px 18px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'left', fontSize: 14, fontWeight: 500, cursor: answered ? 'default' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10, opacity: answered ? 0.7 : 1, transition: 'all 0.15s' }}>
-                      <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{LETTERS[i]}</span>
+                      <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(56,189,248,0.2)', color: '#38bdf8', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{LETTERS[i]}</span>
                       {opt}
                     </button>
                   ))}
                 </div>
-              ) : (
+              )}
+              {/* True or False */}
+              {currentQ.type === 'true_false' && (
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {['True','False'].map((label, i) => (
+                    <button key={i} onClick={() => submitAnswer(i, label)} disabled={answered}
+                      style={{ flex: 1, padding: '18px', background: i === 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', color: i === 0 ? '#4ade80' : '#f87171', border: `2px solid ${i === 0 ? '#22c55e' : '#ef4444'}`, borderRadius: 14, fontSize: 18, fontWeight: 800, cursor: answered ? 'default' : 'pointer', fontFamily: 'inherit', opacity: answered ? 0.7 : 1, transition: 'all 0.15s' }}>
+                      {i === 0 ? '✅ True' : '❌ False'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Short Answer / Identification / Enumeration */}
+              {['fillblank','short_answer','enumeration'].includes(currentQ.type) && (
                 <form onSubmit={e => { e.preventDefault(); submitAnswer(0, openText); }}>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" value={openText} onChange={e => setOpenText(e.target.value)}
@@ -517,6 +531,51 @@ export default function GameRoom({ user }) {
                   </div>
                 </form>
               )}
+              {/* Ordering */}
+              {currentQ.type === 'ordering' && (() => {
+                const parseOrder = () => openText ? openText.split(',').map(s=>s.trim()) : [];
+                return (
+                  <form onSubmit={e => { e.preventDefault(); submitAnswer(0, openText); }}>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Type the correct order as numbers separated by commas (e.g. 2,1,3,4)</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                      {currentQ.options.map((opt, i) => (
+                        <div key={i} style={{ padding: '10px 14px', background: 'rgba(245,158,11,0.1)', border: '1px solid #f59e0b', borderRadius: 10, fontSize: 14, color: 'white', display: 'flex', gap: 10 }}>
+                          <span style={{ color: '#f59e0b', fontWeight: 700, minWidth: 22 }}>{i+1}.</span>{opt}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" value={openText} onChange={e => setOpenText(e.target.value)} placeholder="e.g. 2,1,3,4" disabled={answered} />
+                      <button type="submit" className="btn-neon" disabled={answered || !openText.trim()}>→</button>
+                    </div>
+                  </form>
+                );
+              })()}
+              {/* Matching */}
+              {currentQ.type === 'matching' && (() => {
+                const pairs = currentQ.matchingPairs || [];
+                const colA = pairs.map(([a])=>a);
+                const colB = [...pairs.map(([,b])=>b)].sort(()=>Math.random()-0.5);
+                return (
+                  <form onSubmit={e => { e.preventDefault(); submitAnswer(0, openText); }}>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>Match each item. Type your answers as: A→1, B→2, etc.</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: '#6366f1', paddingBottom: 4 }}>Column A</div>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: '#a855f7', paddingBottom: 4 }}>Column B</div>
+                      {colA.map((item, i) => (
+                        <React.Fragment key={i}>
+                          <div style={{ padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid #6366f1', borderRadius: 8, fontSize: 13, color: 'white' }}>{String.fromCharCode(65+i)}. {item}</div>
+                          <div style={{ padding: '8px 12px', background: 'rgba(168,85,247,0.1)', border: '1px solid #a855f7', borderRadius: 8, fontSize: 13, color: 'white' }}>{i+1}. {colB[i]}</div>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <input className="form-input" style={{ background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} type="text" value={openText} onChange={e => setOpenText(e.target.value)} placeholder="e.g. A→2, B→1, C→3" disabled={answered} />
+                      <button type="submit" className="btn-neon" disabled={answered || !openText.trim()}>→</button>
+                    </div>
+                  </form>
+                );
+              })()}
               {answered && !revealPhase && <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>⏳ Waiting for other players...</div>}
             </div>
           </div>
